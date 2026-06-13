@@ -413,19 +413,19 @@ fun extract(attrs: AttrView, resource: AttrView): AgentSpan = AgentSpan(
 | A2 | An upstream `opentelemetry-semconv` Java constants jar exists but lags the moved GenAI conventions | Standard Stack / Alternatives | LOW — affects only the vendor-vs-depend decision (Q1); recommendation (vendor) is robust either way |
 | A3 | gen_ai message payloads arrive on OTLP spans as `string_value` holding JSON | Payload Handling / Value-Type Mapping | MEDIUM — if an emitter sends them as `kvlist`/`array` AnyValue instead, the extractor's payload reader must also accept structured AnyValue and serialize it; design the payload reader to tolerate both. Spec says spans MAY use JSON string, which is the dominant case |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Vendor gen_ai.* keys vs depend on an upstream semconv constants artifact?**
    - What we know: keys are Development-stability and the conventions moved repos; CLAUDE.md/ARCHITECTURE.md both say isolate keys in one place.
    - What's unclear: whether a maintained Kotlin/Java `gen_ai.*` constants jar covers the newest `gen_ai.input.messages` shape.
-   - Recommendation: **vendor** (~2 dozen string constants in `agent-semconv`). Cheaper, zero transitive deps on the KORE-facing artifact, isolates churn. Re-evaluate only if a maintained jar with full coverage is found during planning (then gate via package-legitimacy check).
+   - RESOLVED: vendor the gen_ai.* key constants (~2 dozen string constants in `agent-semconv`). Cheaper, zero transitive deps on the KORE-facing artifact, isolates churn. Matches D-03 and plan 01. Re-evaluate only if a maintained jar with full coverage is found during planning (then gate via package-legitimacy check).
 
 2. **Strict vs tolerant type coercion when an emitter sends the wrong OTLP type** (e.g. tokens as `string_value` "1234").
    - What we know: spec says tokens are `int`; the receiver "any gen_ai source renders usefully" goal argues for resilience.
-   - Recommendation: prefer the correctly-typed variant; optionally fall back to a tolerant parse for the int/double cases and record nothing if it fails (stay `null`, D-12). Decide and test explicitly — do not leave it implicit.
+   - RESOLVED: strict coercion — a wrong AnyValue variant yields null; no tolerant/lexical fallback parse. The extractor reads only the correctly-typed AnyValue variant; any other variant (or absence) returns null (D-12). Matches plan 02 Task 1.
 
 3. **Does the domain model already need a `node kind` enum in Phase 1**, or only `operation`?
-   - Recommendation: model `gen_ai.operation.name` as an `AgentOperation` enum now (it is the contract); leave DAG node-kind classification (which combines operation + isAgentRoot) to the query phase. Keeps Phase 1 to extraction only.
+   - RESOLVED: only AgentOperation enum in Phase 1; defer DAG node-kind to the query phase. Model `gen_ai.operation.name` as an `AgentOperation` enum now (it is the contract); leave DAG node-kind classification (which combines operation + isAgentRoot) to the query phase. Keeps Phase 1 to extraction only. Matches plan 02.
 
 ## Environment Availability
 
