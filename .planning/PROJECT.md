@@ -12,12 +12,11 @@ A developer debugging an agent failure can see the full decision tree of any age
 
 ### Validated
 
-(None yet — ship to validate)
+- [x] Agent-aware span attribute convention defined and documented by this project: `skill_name`, `context_saturation_pct`, `tokens_used`, `cost_usd` — *Validated in Phase 1 (CONV-01, CONV-02, CONV-03): published `docs/agent-span-convention.md` v1.0, `agent-semconv` vendored constants, and the pure-Kotlin `AgentSpanExtractor` turning OTLP attributes into typed `AgentSpan` fields*
 
 ### Active
 
 - [ ] OTLP receiver (gRPC + HTTP/protobuf): ingests traces from KORE and any OTel-compatible source
-- [ ] Agent-aware span attribute convention defined and documented by this project: `skill_name`, `context_saturation_pct`, `tokens_used`, `cost_usd`
 - [ ] ClickHouse storage for spans, traces, and agent_runs at time-series scale
 - [ ] Agent DAG view: full decision tree of any agent run as an interactive graph
 - [ ] Token cost overlaid on every node in the DAG
@@ -57,7 +56,7 @@ A developer debugging an agent failure can see the full decision tree of any age
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | OTLP receiver supports gRPC + HTTP/protobuf in v0.0.1 | Covers KORE plus virtually every OTel SDK out of the box | — Pending |
-| agent-tracer defines the agent span attribute convention | Publishes its own contract; KORE adopts it when instrumented — unblocks this project fully | — Pending |
+| agent-tracer defines the agent span attribute convention | Publishes its own contract; KORE adopts it when instrumented — unblocks this project fully | ✓ Validated in Phase 1 |
 | Context saturation via span attributes only (no agent-memory dep) | Tool 10 isn't built; emitters supply `context_saturation_pct` directly | — Pending |
 | Keep all 10 acceptance criteria in v0.0.1 (incl. replay + filters) | Full checklist as specced; Helm chart is the only deferral | — Pending |
 | ClickHouse over PostgreSQL | Columnar storage for append-only time-series trace analytics | — Pending |
@@ -82,3 +81,5 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 *Last updated: 2026-06-12 after initialization*
+
+_Last updated: 2026-06-14 (Phase 1 complete)_
