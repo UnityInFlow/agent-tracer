@@ -13,7 +13,7 @@ agent-tracer is built convention-first and backend-first. Phase 1 publishes the 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [x] **Phase 1: Attribute Convention & Domain Model** - Publish the agent span attribute contract and build the gen_ai/unityinflow extractor (completed 2026-06-14)
+- [ ] **Phase 1: Attribute Convention & Domain Model** - Publish the agent span attribute contract and build the gen_ai/unityinflow extractor (all 3 plans complete; verification human_needed 2026-06-14 — see 01-UAT.md)
 - [ ] **Phase 2: ClickHouse Storage Layer** - Schema with typed agent columns, materialized views, payload storage, and the batching write pipeline
 - [ ] **Phase 3: OTLP Ingestion** - Spec-conformant OTLP/HTTP and OTLP/gRPC receivers feeding the single batching pipeline
 - [ ] **Phase 4: Query API, Demo Emitter & Compose Stack** - Backend milestone: DAG/filter/timeline API, synthetic trace generator, and `docker compose up` end-to-end
