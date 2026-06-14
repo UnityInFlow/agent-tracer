@@ -1,108 +1,98 @@
 ---
 phase: 01-attribute-convention-domain-model
-verified: 2026-06-14T00:00:00Z
-status: human_needed
+verified: 2026-06-14T19:00:00Z
+status: passed
 score: 4/4 must-haves verified
 overrides_applied: 0
-human_verification:
-  - test: "Decide whether the four published-but-dropped contract attributes (gen_ai.provider.name, gen_ai.agent.id, gen_ai.tool.call.id, gen_ai.conversation.id) belong in AgentSpan for v1.0, or whether the convention doc rows should be marked not-yet-extracted."
-    expected: "Either AgentSpan gains provider/agentId/toolCallId/conversationId fields the extractor reads, OR docs/agent-span-convention.md §2 annotates those four rows as recognised-but-not-extracted-in-v1.0 so the contract does not over-promise."
-    why_human: "The four keys are declared as Recommended in the published contract (docs/agent-span-convention.md §2) and have agent-semconv constants, but AgentSpanExtractor reads none of them and AgentSpan has no field for them — a KORE span carrying gen_ai.conversation.id is silently dropped at extraction. None of the four are named in any Phase 1 success criterion or in CONV-01/02/03, and no later ROADMAP phase references them, so this does not fail a goal criterion. But whether the published v1.0 contract should surface them is a product/contract decision (the artifact is a Stable contract KORE will depend on) — not a programmatically resolvable fact. Matches code-review finding WR-01."
+re_verification:
+  previous_status: human_needed
+  previous_score: 4/4
+  gaps_closed:
+    - "WR-01: four published-but-dropped Recommended gen_ai.* contract attributes (gen_ai.provider.name, gen_ai.agent.id, gen_ai.tool.call.id, gen_ai.conversation.id) are now backed by typed AgentSpan fields read by AgentSpanExtractor"
+  gaps_remaining: []
+  regressions: []
 ---
 
 # Phase 1: Attribute Convention & Domain Model Verification Report
 
 **Phase Goal:** Any OTel-emitting agent source produces spans agent-tracer understands — the published attribute convention is the ecosystem's public contract, and the extractor turns raw OTLP attributes into typed agent semantics.
-**Verified:** 2026-06-14T00:00:00Z
-**Status:** human_needed
-**Re-verification:** No — initial verification
+**Verified:** 2026-06-14T19:00:00Z
+**Status:** passed
+**Re-verification:** Yes — after gap-closure plan 01-04 closed UAT/WR-01
+
+## Re-Verification Focus
+
+The previous verification was `human_needed` for a single contract-fidelity discrepancy (WR-01): four `gen_ai.*` attributes declared **Recommended** in the published Stable contract (`docs/agent-span-convention.md` §2) had vendored `agent-semconv` constants but no `AgentSpan` field and were silently dropped at extraction. The developer decided to extend the code to match the contract. Plan 01-04 was executed. This re-verification confirms the gap is genuinely closed in code (not merely claimed) and that no regressions were introduced.
+
+### WR-01 Gap Closure — Verified in Code
+
+| Check | Evidence | Status |
+| ----- | -------- | ------ |
+| AgentSpan has the four fields | `AgentSpan.kt` lines 17 (`agentId: String?`), 19 (`provider: String?`), 25 (`toolCallId: String?`), 27 (`conversationId: String?`) — all nullable, KDoc'd in the file's existing style | ✓ CLOSED |
+| Extractor reads all four via vendored constants | `AgentSpanExtractor.kt` lines 41–42, 49–50: `agentId = attrs.string(GenAiAttributes.AGENT_ID)`, `provider = attrs.string(GenAiAttributes.PROVIDER_NAME)`, `toolCallId = attrs.string(GenAiAttributes.TOOL_CALL_ID)`, `conversationId = attrs.string(GenAiAttributes.CONVERSATION_ID)`. `grep -c` of the four constants in the extractor = **4**. No raw key literals (CONV-01). No `unityinflow.*` precedence (these are gen_ai.* only — correct). | ✓ CLOSED |
+| Contract §2 rows are now backed | `docs/agent-span-convention.md` §2 lines 58/64/66/67 declare all four as Recommended `string_value`; each now maps to a typed field the extractor reads — no silent data-loss path | ✓ CLOSED |
+| Populated-field tests exist and pass | `AgentSpanExtractorGenAiOnlyTest.kt` lines 47–63: `provider shouldBe "anthropic"`, `agentId shouldBe "agent-42"`, `toolCallId shouldBe "call-7"`, `conversationId shouldBe "conv-abc"`. All four ran and passed (test-results XML). | ✓ CLOSED |
+| Null-on-absence tests exist and pass (D-12) | `AgentSpanExtractorNullableTest.kt` lines 26–31: all four `.shouldBeNull()` for an empty-attrs span. Ran and passed. | ✓ CLOSED |
+| Golden fixture carries the keys | `SpanFixtures.kt` lines 84–87 add the four keys to `genAiOnlyAttrs` via `stringAttr(GenAiAttributes.*)` | ✓ CLOSED |
 
 ## Goal Achievement
 
 ### Observable Truths
 
-All four truths are the ROADMAP Phase 1 Success Criteria (the non-negotiable contract), merged with the plan-frontmatter must-haves.
-
 | #   | Truth | Status | Evidence |
 | --- | ----- | ------ | -------- |
-| 1   | A developer can read a published, versioned convention document defining `unityinflow.skill.name`, `unityinflow.context.saturation_pct`, `unityinflow.cost.usd` alongside standard `gen_ai.*` token/model/agent attributes | ✓ VERIFIED | `docs/agent-span-convention.md` (190 lines) exists; all three unityinflow.* keys + both gen_ai.usage.* keys present; semver 1.0 + `unityinflow.schema_version` stamp; README links to it (1 match). |
-| 2   | The convention document specifies the OTLP value type for every attribute and large-payload handling rules | ✓ VERIFIED | Doc contains "OTLP value type" column; 256 KB cap stated; `unityinflow.payload.truncated` + `unityinflow.payload.original_size_bytes` truncation keys present; per-attribute value-type rows verified. |
-| 3   | A span carrying only standard `gen_ai.*` attributes (input/output tokens, invoke_agent/execute_tool operations) is extracted into typed agent fields with no emitter changes (CONV-02) | ✓ VERIFIED | `AgentSpanExtractorGenAiOnlyTest` (8 tests, all green): agentName from gen_ai.agent.name (and service.name fallback → "kore-runtime"), model from response→request, inputTokens=1234L/outputTokens=567L from gen_ai.usage.*, operation=INVOKE_AGENT, all unityinflow.* fields null. Tokens typed Long? (not stringified). |
-| 4   | A span carrying `unityinflow.*` extensions is extracted into typed fields with precedence over generic fallbacks verified by tests (CONV-03) | ✓ VERIFIED | `AgentSpanExtractorPrecedenceTest` (3 green): skillName == unityinflow value "deep-research" over gen_ai.tool.name; unityinflow.outcome PARTIAL overrides OTel error status. `ClampTest`: saturation 137→100, -5→0, 73.5 preserved. `NullableTest`: missing→null no sentinel + extractor never throws on empty input. |
+| 1   | A developer can read a published, versioned convention document defining `unityinflow.skill.name`, `unityinflow.context.saturation_pct`, `unityinflow.cost.usd` alongside standard `gen_ai.*` token/model/agent attributes | ✓ VERIFIED | `docs/agent-span-convention.md` exists with all three unityinflow.* keys + gen_ai.* token/model/agent rows incl. the four Recommended rows (§2 lines 58/64/66/67); README links it. Unchanged from prior pass. |
+| 2   | The convention document specifies the OTLP value type for every attribute and large-payload handling rules | ✓ VERIFIED | §2 rows carry an explicit `string_value`/value-type column per attribute (incl. the four new ones); 256 KB cap + truncation keys present. Unchanged from prior pass. |
+| 3   | A span carrying only standard `gen_ai.*` attributes is extracted into typed agent fields with no emitter changes (CONV-02) | ✓ VERIFIED | `AgentSpanExtractorGenAiOnlyTest` (12 tests incl. the 4 new provider/agentId/toolCallId/conversationId assertions) all green; tokens typed `Long?`. The four formerly-dropped gen_ai.* keys now extract into typed fields. |
+| 4   | A span carrying `unityinflow.*` extensions is extracted into typed fields with precedence over generic fallbacks verified by tests (CONV-03) | ✓ VERIFIED | Precedence + clamp + nullable + value-type suites all green. `skillName` prefers `unityinflow.skill.name` over `gen_ai.tool.name`; outcome override verified. Unchanged from prior pass. |
 
 **Score:** 4/4 truths verified
 
-### Required Artifacts
+### Required Artifacts (re-verification — changed files only)
 
 | Artifact | Expected | Status | Details |
 | -------- | -------- | ------ | ------- |
-| `settings.gradle.kts` | Multi-module include | ✓ VERIFIED | `rootProject.name = "agent-tracer"`; `include(...)` of agent-semconv + backend. |
-| `gradle/libs.versions.toml` | Version catalog pins | ✓ VERIFIED | kotlin 2.4.0, junit5 5.14.4, kotest 6.1.11, opentelemetry-proto 1.10.0-alpha all present. |
-| `agent-semconv/.../GenAiAttributes.kt` | gen_ai.* key constants, single source | ✓ VERIFIED | 16 const vals incl. `gen_ai.usage.input_tokens`; only place gen_ai.* literals appear. |
-| `agent-semconv/.../UnityInFlowAttributes.kt` | unityinflow.* key constants | ✓ VERIFIED | Contains `unityinflow.cost.usd` + 8 other extension keys. |
-| `agent-semconv/.../GenAiOperation.kt` | Typed enum + fromOtel | ✓ VERIFIED | 7 variants; `fromOtel(String): GenAiOperation?` returns null on unknown, never throws. |
-| `backend/.../domain/AgentSpan.kt` | Immutable typed model, nullable | ✓ VERIFIED | `data class AgentSpan` with 18 nullable typed fields (Long? tokens, Double? cost/saturation, Int? planStep), non-null outcome. |
-| `backend/.../convention/AttrView.kt` | Type-preserving AnyValue coercion | ✓ VERIFIED | string/long/double/bool/int/stringList strict accessors over OTLP AnyValue; wrong variant → null. |
-| `backend/.../convention/AgentSpanExtractor.kt` | Pure extractor, unityinflow.* precedence | ✓ VERIFIED | `fun extract`; priority-ordered lookup; uses agent-semconv constants (no raw literals); never throws. |
-| `docs/agent-span-convention.md` | Published versioned contract | ✓ VERIFIED | 190 lines; all required keys, value-type column, payload rules, precedence, PII warning. |
-| `README.md` | Links the convention | ✓ VERIFIED | Markdown link to `agent-span-convention.md` present. |
+| `backend/.../domain/AgentSpan.kt` | +4 nullable fields | ✓ VERIFIED | `provider`, `agentId`, `toolCallId`, `conversationId` all `String?`, KDoc'd; data class remains immutable, no `var`/`!!`. |
+| `backend/.../convention/AgentSpanExtractor.kt` | reads 4 new keys via constants | ✓ VERIFIED | 4 `attrs.string(GenAiAttributes.*)` reads; grep count = 4; no raw literals; no spurious `unityinflow.*` precedence. |
+| `backend/.../test/.../SpanFixtures.kt` | fixture carries 4 keys | ✓ VERIFIED | lines 84–87. |
+| `backend/.../test/.../AgentSpanExtractorGenAiOnlyTest.kt` | 4 populated-field tests | ✓ VERIFIED | lines 47–63, all green. |
+| `backend/.../test/.../AgentSpanExtractorNullableTest.kt` | 4 null-on-absence asserts | ✓ VERIFIED | lines 26–31, all green. |
 
-### Key Link Verification
-
-| From | To | Via | Status | Details |
-| ---- | -- | --- | ------ | ------- |
-| `agent-semconv/build.gradle.kts` | `agenttracer.publishing` plugin | `id("agenttracer.publishing")` | ✓ WIRED | Plugin id applied; no `kore.publishing` remnant in buildSrc. |
-| `AgentSpanExtractor.kt` | `agentsemconv` constants | import of GenAiAttributes/UnityInFlowAttributes/GenAiOperation | ✓ WIRED | 3 imports; constants used field-by-field; no raw key literals. |
-| `AttrView.kt` | opentelemetry-proto KeyValue/AnyValue | reads AnyValue oneof per type | ✓ WIRED | Imports + has*/get* variant reads confirmed. |
-| `backend/build.gradle.kts` | `:agent-semconv` + opentelemetry-proto | implementation deps | ✓ WIRED | `project(":agent-semconv")` + `libs.opentelemetry.proto`; agent-semconv itself has NO OTLP dep (boundary held). |
-| `README.md` | `docs/agent-span-convention.md` | markdown link | ✓ WIRED | Link present. |
+Other artifacts (version catalog, agent-semconv constants, AttrView, convention doc, README) were VERIFIED in the initial pass and are unchanged by plan 01-04 (regression check: build still green, no edits to those files per 01-04 frontmatter).
 
 ### Behavioral Spot-Checks
 
 | Behavior | Command | Result | Status |
 | -------- | ------- | ------ | ------ |
-| Full multi-module suite passes (forced rerun) | `./gradlew test --rerun-tasks` | BUILD SUCCESSFUL; 43 tests across 9 classes, 0 failures, 0 errors | ✓ PASS |
-| gen_ai-only span → typed fields | `AgentSpanExtractorGenAiOnlyTest` (8) | all green | ✓ PASS |
-| unityinflow.* precedence | `AgentSpanExtractorPrecedenceTest` (3) | all green | ✓ PASS |
-| saturation clamp [0,100] | `AgentSpanExtractorClampTest` (3) | all green | ✓ PASS |
-| missing→null + never-throws | `AgentSpanExtractorNullableTest` (3) | all green | ✓ PASS |
-| OTLP value-type preservation | `AgentSpanExtractorValueTypeTest` (7) | all green | ✓ PASS |
-| operation enum + unknown→null | `AgentSpanExtractorOperationTest` (4) + `GenAiOperationTest` (4) | all green | ✓ PASS |
+| Full backend suite passes (forced rerun) | `./gradlew :backend:test --rerun-tasks` | BUILD SUCCESSFUL; 37 tests across 7 classes, 0 failures, 0 errors | ✓ PASS |
+| provider from gen_ai.provider.name | `AgentSpanExtractorGenAiOnlyTest."provider comes from gen_ai provider name"` | green | ✓ PASS |
+| agentId from gen_ai.agent.id | `..."agent id comes from gen_ai agent id"` | green | ✓ PASS |
+| toolCallId from gen_ai.tool.call.id | `AgentSpanExtractorGenAiOnlyTest` (tool-call test) | green | ✓ PASS |
+| conversationId from gen_ai.conversation.id | `..."conversation id comes from gen_ai conversation id"` | green | ✓ PASS |
+| all four null on empty span (D-12) | `AgentSpanExtractorNullableTest."a span missing the gen_ai provider agent tool-call and conversation ids..."` | green | ✓ PASS |
+| extractor reads all 4 constants | `grep -c GenAiAttributes.(PROVIDER_NAME\|AGENT_ID\|TOOL_CALL_ID\|CONVERSATION_ID)` | 4 | ✓ PASS |
 
 ### Requirements Coverage
 
-| Requirement | Source Plan | Description | Status | Evidence |
-| ----------- | ----------- | ----------- | ------ | -------- |
-| CONV-01 | 01-01, 01-03 | Attribute convention published as documented contract (skill.name, saturation_pct, cost.usd + gen_ai.*) | ✓ SATISFIED | agent-semconv constants (machine surface) + docs/agent-span-convention.md v1.0 (prose contract); REQUIREMENTS.md marks Complete. |
-| CONV-02 | 01-02 | Extractor reads standard OTel GenAI semconv (input/output tokens, invoke_agent/execute_tool) so any gen_ai-emitter renders without changes | ✓ SATISFIED | GenAiOnly test suite; extractor reads gen_ai.usage.* + gen_ai.operation.name via vendored constants. |
-| CONV-03 | 01-02, 01-03 | Convention specifies OTLP value types per attribute + large-payload handling | ✓ SATISFIED | Doc value-type column + 256 KB cap + truncation keys; AttrView preserves types (ValueType test). |
+| Requirement | Source Plan(s) | Description | Status | Evidence |
+| ----------- | -------------- | ----------- | ------ | -------- |
+| CONV-01 | 01-01, 01-03 | Convention published as documented contract | ✓ SATISFIED | agent-semconv constants + `docs/agent-span-convention.md` v1.0; REQUIREMENTS.md marks Complete. |
+| CONV-02 | 01-02, 01-04 | Extractor reads standard OTel GenAI semconv with no emitter changes | ✓ SATISFIED | GenAiOnly suite (12 tests) incl. the four new Recommended-key reads. |
+| CONV-03 | 01-02, 01-03, 01-04 | Convention specifies OTLP value types + large-payload handling | ✓ SATISFIED | Doc value-type column (incl. 4 new rows) + truncation keys; AttrView preserves types. |
 
-All three phase requirement IDs (CONV-01, CONV-02, CONV-03) are declared in plan frontmatter, described in REQUIREMENTS.md, and accounted for. No orphaned requirements — REQUIREMENTS.md maps exactly CONV-01/02/03 to Phase 1.
+All requirement IDs declared across all four PLAN frontmatters — CONV-01, CONV-02, CONV-03 — appear in REQUIREMENTS.md mapped to Phase 1 (lines 90–92, all `Complete`). No orphaned requirements; no plan-declared ID is missing from REQUIREMENTS.md.
 
 ### Anti-Patterns Found
 
 | File | Line | Pattern | Severity | Impact |
 | ---- | ---- | ------- | -------- | ------ |
-| (none) | — | No TODO/FIXME/XXX/TBD/PLACEHOLDER/HACK in main source | — | Clean |
-| (none) | — | No `var`, no `!!` in main source | — | Conforms to CLAUDE.md Kotlin rules |
-
-No stubs, no debt markers, no empty-return placeholders. The extractor is genuinely total over malformed input (NullableTest proves never-throws). Signing skips gracefully without env vars (observed in build log).
-
-### Human Verification Required
-
-#### 1. Four published contract attributes are dropped by the extractor (code-review WR-01)
-
-**Test:** Decide whether `gen_ai.provider.name`, `gen_ai.agent.id`, `gen_ai.tool.call.id`, and `gen_ai.conversation.id` should be surfaced in `AgentSpan` for v1.0.
-**Expected:** Either AgentSpan gains `provider`/`agentId`/`toolCallId`/`conversationId` fields that the extractor reads, OR `docs/agent-span-convention.md` §2 annotates those four rows as recognised-but-not-extracted-in-v1.0 — so the Stable contract does not over-promise.
-**Why human:** All four keys are declared as **Recommended** in the published contract (doc §2 lines 58/64/66/67) and have agent-semconv constants, but `AgentSpanExtractor.extract` reads none of them and `AgentSpan` has no field for them — a KORE span carrying `gen_ai.conversation.id` (the session/thread id) is silently dropped at extraction with no warning. This is a contract-vs-implementation discrepancy on a Stable artifact KORE depends on. However: none of the four keys appear in any Phase 1 ROADMAP success criterion or in CONV-01/02/03, and no later ROADMAP phase references them — so this does **not** falsify any goal criterion. Whether the v1.0 contract *should* surface them is a product/contract decision, not a programmatically resolvable fact.
+| (none) | — | No `var` / `!!` / TODO / FIXME / XXX / TBD / PLACEHOLDER in modified main source | — | Conforms to CLAUDE.md Kotlin rules |
 
 ### Gaps Summary
 
-**No goal-blocking gaps.** All 4 ROADMAP success criteria are observably true in the codebase and test-verified (43 tests green on a forced rerun). All 3 requirements (CONV-01/02/03) are satisfied. The build, version catalog, publishing plugin, agent-semconv constants module, AttrView coercion layer, AgentSpanExtractor, typed AgentSpan/AgentOutcome domain model, and the versioned convention doc all exist, are substantive, and are correctly wired (extractor → semconv constants, AttrView → OTLP proto, README → doc, build module boundaries held: agent-semconv has zero OTLP deps).
-
-The single open item is the WR-01 contract-fidelity discrepancy: four Recommended attributes are published in the contract but silently dropped by the extractor. Because it touches the published v1.0 contract KORE will build against — yet contradicts no success criterion — it is surfaced as a human decision rather than an automatic gap. The other code-review findings (WR-02 protobuf pin not applied, WR-03 stringList empty-vs-null, WR-04 empty-string passthrough, WR-05 unused mockk / no coverage gate) are correctness/quality refinements that do not affect any Phase 1 goal criterion and are left to the advisory code review.
+**No gaps. Phase goal achieved.** The sole open item from the prior verification (WR-01, surfaced as a human decision) has been resolved by the developer's chosen fix and confirmed in code: all four §2 Recommended `gen_ai.*` attributes (`provider.name`, `agent.id`, `tool.call.id`, `conversation.id`) are now nullable `AgentSpan` fields read by `AgentSpanExtractor` through vendored `GenAiAttributes` constants, with populated and null-on-absence tests green. The published Stable contract no longer over-promises — every §2 row is backed by a typed field with no silent data-loss path. Backend suite: 37 tests, 0 failures on a forced rerun. No regressions to the previously-verified artifacts. All 4 ROADMAP success criteria observably true; all 3 requirements satisfied.
 
 ---
 
-_Verified: 2026-06-14T00:00:00Z_
+_Verified: 2026-06-14T19:00:00Z_
 _Verifier: Claude (gsd-verifier)_
