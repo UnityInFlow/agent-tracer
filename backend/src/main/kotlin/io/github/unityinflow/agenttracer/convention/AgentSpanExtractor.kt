@@ -38,12 +38,16 @@ object AgentSpanExtractor {
             agentName =
                 attrs.string(GenAiAttributes.AGENT_NAME)
                     ?: resource.string(GenAiAttributes.SERVICE_NAME),
+            agentId = attrs.string(GenAiAttributes.AGENT_ID),
+            provider = attrs.string(GenAiAttributes.PROVIDER_NAME),
             model =
                 attrs.string(GenAiAttributes.RESPONSE_MODEL)
                     ?: attrs.string(GenAiAttributes.REQUEST_MODEL),
             skillName =
                 attrs.string(UnityInFlowAttributes.SKILL_NAME)
                     ?: attrs.string(GenAiAttributes.TOOL_NAME),
+            toolCallId = attrs.string(GenAiAttributes.TOOL_CALL_ID),
+            conversationId = attrs.string(GenAiAttributes.CONVERSATION_ID),
             skillVersion = attrs.string(UnityInFlowAttributes.SKILL_VERSION),
             inputTokens = attrs.long(GenAiAttributes.USAGE_INPUT_TOKENS),
             outputTokens = attrs.long(GenAiAttributes.USAGE_OUTPUT_TOKENS),

@@ -13,10 +13,18 @@ import io.github.unityinflow.agentsemconv.GenAiOperation
 data class AgentSpan(
     /** Agent identity: `gen_ai.agent.name`, falling back to resource `service.name` (D-10). */
     val agentName: String?,
+    /** Stable agent identifier (`gen_ai.agent.id`). */
+    val agentId: String?,
+    /** GenAI provider name (`gen_ai.provider.name`), e.g. `anthropic`, `openai`. */
+    val provider: String?,
     /** Model that served the response (`gen_ai.response.model`), else the requested model. */
     val model: String?,
     /** Activated skill name: `unityinflow.skill.name`, else `gen_ai.tool.name` (D-11). */
     val skillName: String?,
+    /** Identifier of a specific tool invocation (`gen_ai.tool.call.id`). */
+    val toolCallId: String?,
+    /** Groups related spans into a conversation/run (`gen_ai.conversation.id`). */
+    val conversationId: String?,
     /** Activated skill version (`unityinflow.skill.version`, D-07). */
     val skillVersion: String?,
     /** Prompt tokens consumed (`gen_ai.usage.input_tokens`, D-06). */
