@@ -13,11 +13,11 @@ agent-tracer is built convention-first and backend-first. Phase 1 publishes the 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Attribute Convention & Domain Model** - Publish the agent span attribute contract and build the gen_ai/unityinflow extractor (all 3 plans complete; verification human_needed 2026-06-14 — see 01-UAT.md)
+- [ ] **Phase 1: Attribute Convention & Domain Model** - Publish the agent span attribute contract and build the gen_ai/unityinflow extractor (1 UAT gap → gap-closure plan 01-04 pending)
 - [ ] **Phase 2: ClickHouse Storage Layer** - Schema with typed agent columns, materialized views, payload storage, and the batching write pipeline
 - [ ] **Phase 3: OTLP Ingestion** - Spec-conformant OTLP/HTTP and OTLP/gRPC receivers feeding the single batching pipeline
 - [ ] **Phase 4: Query API, Demo Emitter & Compose Stack** - Backend milestone: DAG/filter/timeline API, synthetic trace generator, and `docker compose up` end-to-end
-- [ ] **Phase 5: Frontend Visualization** - Interactive DAG with cost overlay, saturation timeline, nested subagents, replay mode, and run filters
+- [ ] **Phase 5: Frontend Visualization** - Interactive DAG with cost overlay, saturation timeline, nested subagents, replay mode, and filters
 
 ## Phase Details
 
@@ -33,11 +33,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A span carrying only standard `gen_ai.*` attributes (`gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `invoke_agent`/`execute_tool` operations) is extracted into typed agent fields with no emitter changes
   4. A span carrying `unityinflow.*` extension attributes is extracted into typed agent fields (skill, saturation, cost), with extraction precedence over generic fallbacks verified by tests
 
-**Plans**: 3 plansPlans:
+**Plans**: 4 plans (3 complete + 1 gap-closure)
 
 - [x] 01-01-PLAN.md — Gradle multi-module build scaffolding + agent-semconv constants module (vendored gen_ai.*/unityinflow.* keys + GenAiOperation enum)
 - [x] 01-02-PLAN.md — Domain model (AgentSpan/AgentOutcome) + AttrView coercion + AgentSpanExtractor with precedence/clamp/nullability tests
 - [x] 01-03-PLAN.md — Published versioned convention document (docs/agent-span-convention.md) + README link
+- [ ] 01-04-extend-agentspan-gen-ai-keys-PLAN.md — GAP CLOSURE (WR-01 / 01-UAT.md): add the four Recommended gen_ai.* fields (provider, agentId, toolCallId, conversationId) to AgentSpan and read them in AgentSpanExtractor
 
 ### Phase 2: ClickHouse Storage Layer
 
@@ -105,7 +106,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Attribute Convention & Domain Model | 3/3 | Complete   | 2026-06-14 |
+| 1. Attribute Convention & Domain Model | 3/4 | Gap closure | - |
 | 2. ClickHouse Storage Layer | 0/TBD | Not started | - |
 | 3. OTLP Ingestion | 0/TBD | Not started | - |
 | 4. Query API, Demo Emitter & Compose Stack | 0/TBD | Not started | - |
