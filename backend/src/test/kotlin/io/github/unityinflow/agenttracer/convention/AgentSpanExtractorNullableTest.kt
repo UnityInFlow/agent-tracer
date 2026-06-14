@@ -23,6 +23,15 @@ class AgentSpanExtractorNullableTest {
     }
 
     @Test
+    fun `a span missing the gen_ai provider agent tool-call and conversation ids extracts those fields as null`() {
+        val span = AgentSpanExtractor.extract(AttrView.empty(), AttrView.empty())
+        span.provider.shouldBeNull()
+        span.agentId.shouldBeNull()
+        span.toolCallId.shouldBeNull()
+        span.conversationId.shouldBeNull()
+    }
+
+    @Test
     fun `extracting from an empty attribute list never throws and outcome defaults to success`() {
         val span = AgentSpanExtractor.extract(AttrView.empty(), AttrView.empty())
         span.outcome shouldBe AgentOutcome.SUCCESS

@@ -44,6 +44,26 @@ class AgentSpanExtractorGenAiOnlyTest {
     }
 
     @Test
+    fun `provider comes from gen_ai provider name`() {
+        span.provider shouldBe "anthropic"
+    }
+
+    @Test
+    fun `agent id comes from gen_ai agent id`() {
+        span.agentId shouldBe "agent-42"
+    }
+
+    @Test
+    fun `tool call id comes from gen_ai tool call id`() {
+        span.toolCallId shouldBe "call-7"
+    }
+
+    @Test
+    fun `conversation id comes from gen_ai conversation id`() {
+        span.conversationId shouldBe "conv-abc"
+    }
+
+    @Test
     fun `all unityinflow-only fields are null on a gen_ai-only span`() {
         span.costUsd.shouldBeNull()
         span.saturationPct.shouldBeNull()
