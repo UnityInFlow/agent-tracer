@@ -9,7 +9,7 @@ Requirements for v0.0.1. Each maps to roadmap phases.
 
 ### Convention
 
-- [ ] **CONV-01**: Agent span attribute convention is published as a documented contract: `unityinflow.skill.name`, `unityinflow.context.saturation_pct`, `unityinflow.cost.usd` plus standard `gen_ai.*` token/model/agent attributes
+- [x] **CONV-01**: Agent span attribute convention is published as a documented contract: `unityinflow.skill.name`, `unityinflow.context.saturation_pct`, `unityinflow.cost.usd` plus standard `gen_ai.*` token/model/agent attributes
 - [x] **CONV-02**: Attribute extractor reads standard OTel GenAI semconv (`gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `invoke_agent`/`execute_tool` operations) so any gen_ai.*-emitting source renders usefully without changes
 - [x] **CONV-03**: Convention specifies OTLP value types per attribute and large-payload (prompt/completion) handling rules
 
@@ -87,7 +87,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CONV-01 | Phase 1 | Pending |
+| CONV-01 | Phase 1 | Complete |
 | CONV-02 | Phase 1 | Complete |
 | CONV-03 | Phase 1 | Complete |
 | STOR-01 | Phase 2 | Pending |
