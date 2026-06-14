@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 1 context gathered
-last_updated: "2026-06-13T05:25:59.670Z"
-last_activity: 2026-06-12 — Roadmap created (5 phases, 22/22 requirements mapped)
+stopped_at: Completed 01-01-PLAN.md
+last_updated: "2026-06-14T09:09:18Z"
+last_activity: 2026-06-14 -- Completed Plan 01-01 (build scaffolding + agent-semconv)
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 3
+  completed_plans: 1
+  percent: 33
 ---
 
 # Project State
@@ -21,30 +21,30 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-12)
 
 **Core value:** A developer debugging an agent failure can see the full decision tree of any agent run — with token cost and context saturation on every node — instead of reading thousands of generic spans.
-**Current focus:** Phase 1 — Attribute Convention & Domain Model
+**Current focus:** Phase 01 — attribute-convention-domain-model
 
 ## Current Position
 
-Phase: 1 of 5 (Attribute Convention & Domain Model)
-Plan: 0 of TBD in current phase
-Status: Ready to execute
-Last activity: 2026-06-12 — Roadmap created (5 phases, 22/22 requirements mapped)
+Phase: 01 (attribute-convention-domain-model) — EXECUTING
+Plan: 2 of 3
+Status: Executing Phase 01 (Plan 01-01 complete)
+Last activity: 2026-06-14 -- Completed Plan 01-01 (build scaffolding + agent-semconv)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 0
-- Average duration: -
-- Total execution time: 0 hours
+- Total plans completed: 1
+- Average duration: ~5 min
+- Total execution time: ~0.1 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01    | 1     | ~5min | ~5min    |
 
 **Recent Trend:**
 
@@ -64,6 +64,9 @@ Recent decisions affecting current work:
 - [Roadmap]: DIST-01 (Docker Compose all-in-one) delivered in Phase 4 with the backend milestone, not a standalone packaging phase — cold-start ingest is provable with curl before React exists
 - [Roadmap]: Server-side DAG assembly — the frontend receives a render-ready nested tree; DAG correctness stays inside Kotlin test coverage
 - [Research]: Use opentelemetry-proto pre-generated gRPC stubs (no codegen pipeline); grpc-netty-shaded alongside Ktor; ClickHouse client-v2 (not JDBC); elkjs (not dagre/d3-dag) for compound-node DAG layout
+- [01-01]: agent-semconv published; backend extractor stays internal in v0.0.1 (D-03) — only agent-semconv aggregated for Maven Central
+- [01-01]: STACK.md pins win over kore's older catalog (Kotlin 2.4.0, Gradle 9.5.1, JUnit 5.14.4)
+- [01-01]: opentelemetry-proto confined to backend module so agent-semconv stays a near-zero-dep KORE-facing artifact
 
 ### Pending Todos
 
@@ -86,6 +89,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-12T19:56:20.560Z
-Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-attribute-convention-domain-model/01-CONTEXT.md
+Last session: 2026-06-14T09:09:18Z
+Stopped at: Completed 01-01-PLAN.md
+Resume file: None
