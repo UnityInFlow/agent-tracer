@@ -36,7 +36,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plansPlans:
 
 - [x] 01-01-PLAN.md — Gradle multi-module build scaffolding + agent-semconv constants module (vendored gen_ai.*/unityinflow.* keys + GenAiOperation enum)
-- [ ] 01-02-PLAN.md — Domain model (AgentSpan/AgentOutcome) + AttrView coercion + AgentSpanExtractor with precedence/clamp/nullability tests
+- [x] 01-02-PLAN.md — Domain model (AgentSpan/AgentOutcome) + AttrView coercion + AgentSpanExtractor with precedence/clamp/nullability tests
 - [ ] 01-03-PLAN.md — Published versioned convention document (docs/agent-span-convention.md) + README link
 
 ### Phase 2: ClickHouse Storage Layer
@@ -105,7 +105,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Attribute Convention & Domain Model | 1/3 | In progress | - |
+| 1. Attribute Convention & Domain Model | 2/3 | In Progress|  |
 | 2. ClickHouse Storage Layer | 0/TBD | Not started | - |
 | 3. OTLP Ingestion | 0/TBD | Not started | - |
 | 4. Query API, Demo Emitter & Compose Stack | 0/TBD | Not started | - |

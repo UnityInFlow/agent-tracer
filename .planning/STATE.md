@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-06-14T09:09:18Z"
+last_updated: "2026-06-14T09:20:07.250Z"
 last_activity: 2026-06-14 -- Completed Plan 01-01 (build scaffolding + agent-semconv)
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
-  percent: 33
+  completed_plans: 2
+  percent: 0
 ---
 
 # Project State
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-06-12)
 ## Current Position
 
 Phase: 01 (attribute-convention-domain-model) — EXECUTING
-Plan: 2 of 3
-Status: Executing Phase 01 (Plan 01-01 complete)
+Plan: 3 of 3
+Status: Ready to execute
 Last activity: 2026-06-14 -- Completed Plan 01-01 (build scaffolding + agent-semconv)
 
 Progress: [███░░░░░░░] 33%
@@ -52,6 +52,7 @@ Progress: [███░░░░░░░] 33%
 - Trend: -
 
 *Updated after each plan completion*
+| Phase 01 P02 | 9min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -67,6 +68,8 @@ Recent decisions affecting current work:
 - [01-01]: agent-semconv published; backend extractor stays internal in v0.0.1 (D-03) — only agent-semconv aggregated for Maven Central
 - [01-01]: STACK.md pins win over kore's older catalog (Kotlin 2.4.0, Gradle 9.5.1, JUnit 5.14.4)
 - [01-01]: opentelemetry-proto confined to backend module so agent-semconv stays a near-zero-dep KORE-facing artifact
+- [01-02]: Reuse agentsemconv.GenAiOperation as AgentSpan.operation; no duplicate domain enum (single source of truth)
+- [01-02]: Strict OTLP coercion (Q2) — wrong AnyValue variant returns null, never lexically parses
 
 ### Pending Todos
 
@@ -89,6 +92,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-14T09:09:18Z
+Last session: 2026-06-14T09:19:52.114Z
 Stopped at: Completed 01-01-PLAN.md
 Resume file: None

@@ -10,8 +10,8 @@ Requirements for v0.0.1. Each maps to roadmap phases.
 ### Convention
 
 - [ ] **CONV-01**: Agent span attribute convention is published as a documented contract: `unityinflow.skill.name`, `unityinflow.context.saturation_pct`, `unityinflow.cost.usd` plus standard `gen_ai.*` token/model/agent attributes
-- [ ] **CONV-02**: Attribute extractor reads standard OTel GenAI semconv (`gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `invoke_agent`/`execute_tool` operations) so any gen_ai.*-emitting source renders usefully without changes
-- [ ] **CONV-03**: Convention specifies OTLP value types per attribute and large-payload (prompt/completion) handling rules
+- [x] **CONV-02**: Attribute extractor reads standard OTel GenAI semconv (`gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `invoke_agent`/`execute_tool` operations) so any gen_ai.*-emitting source renders usefully without changes
+- [x] **CONV-03**: Convention specifies OTLP value types per attribute and large-payload (prompt/completion) handling rules
 
 ### Ingestion
 
@@ -88,8 +88,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | CONV-01 | Phase 1 | Pending |
-| CONV-02 | Phase 1 | Pending |
-| CONV-03 | Phase 1 | Pending |
+| CONV-02 | Phase 1 | Complete |
+| CONV-03 | Phase 1 | Complete |
 | STOR-01 | Phase 2 | Pending |
 | STOR-02 | Phase 2 | Pending |
 | STOR-03 | Phase 2 | Pending |
@@ -111,6 +111,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VIZ-07 | Phase 5 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 22 total (count corrected from 21 during roadmap creation — enumeration is 3 CONV + 3 INGEST + 3 STOR + 4 API + 7 VIZ + 1 TOOL + 1 DIST)
 - Mapped to phases: 22
 - Unmapped: 0 ✓
