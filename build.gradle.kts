@@ -42,7 +42,10 @@ nmcpAggregation {
         username = providers.environmentVariable("SONATYPE_USERNAME")
         password = providers.environmentVariable("SONATYPE_PASSWORD")
         publishingType = "USER_MANAGED"
-        publicationName = "agent-tracer-${project.version}"
+        // The Sonatype Central Portal rejects `-SNAPSHOT` artifacts. The base
+        // artifact name must never carry the version suffix: strip it so a
+        // pre-release `version` (0.0.1-SNAPSHOT) cannot leak into the bundle name.
+        publicationName = "agent-tracer-${project.version.toString().removeSuffix("-SNAPSHOT")}"
     }
 }
 
