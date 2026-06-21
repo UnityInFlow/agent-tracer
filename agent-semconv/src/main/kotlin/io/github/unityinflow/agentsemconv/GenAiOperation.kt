@@ -22,6 +22,9 @@ enum class GenAiOperation {
     /** `text_completion` — a text-completion LLM call. */
     TEXT_COMPLETION,
 
+    /** `embeddings` — an embeddings-generation call. */
+    EMBEDDINGS,
+
     /** `plan` — a plan-step node. */
     PLAN,
 
@@ -44,6 +47,7 @@ enum class GenAiOperation {
                 "chat" -> CHAT
                 "generate_content" -> GENERATE_CONTENT
                 "text_completion" -> TEXT_COMPLETION
+                "embeddings" -> EMBEDDINGS
                 "plan" -> PLAN
                 "create_agent" -> CREATE_AGENT
                 else -> null

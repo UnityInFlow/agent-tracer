@@ -133,8 +133,8 @@ counts in this contract.
   names are advisory (e.g. `invoke_agent {gen_ai.agent.name}`); emitters SHOULD
   follow the GenAI span-naming guidance, but consumers MUST classify by operation.
   The operations that matter for v1.0: `invoke_agent` (agent run / subagent),
-  `execute_tool` (tool node), `chat` / `generate_content` / `text_completion`
-  (LLM-call node), `plan` (plan-step node).
+  `execute_tool` (tool node), `chat` / `generate_content` / `text_completion` /
+  `embeddings` (LLM-call node), `plan` (plan-step node).
 
 ---
 

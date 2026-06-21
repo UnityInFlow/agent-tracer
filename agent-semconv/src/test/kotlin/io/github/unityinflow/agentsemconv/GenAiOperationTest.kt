@@ -31,6 +31,11 @@ class GenAiOperationTest {
     }
 
     @Test
+    fun `fromOtel maps embeddings to EMBEDDINGS`() {
+        GenAiOperation.fromOtel("embeddings") shouldBe GenAiOperation.EMBEDDINGS
+    }
+
+    @Test
     fun `fromOtel maps plan to PLAN`() {
         GenAiOperation.fromOtel("plan") shouldBe GenAiOperation.PLAN
     }
