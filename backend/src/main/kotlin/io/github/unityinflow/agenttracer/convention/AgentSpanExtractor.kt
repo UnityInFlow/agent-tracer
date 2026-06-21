@@ -56,7 +56,7 @@ object AgentSpanExtractor {
                 attrs
                     .double(UnityInFlowAttributes.CONTEXT_SATURATION_PCT)
                     ?.coerceIn(0.0, 100.0),
-            planStep = attrs.int(UnityInFlowAttributes.PLAN_STEP),
+            planStep = attrs.long(UnityInFlowAttributes.PLAN_STEP),
             operation =
                 attrs
                     .string(GenAiAttributes.OPERATION_NAME)

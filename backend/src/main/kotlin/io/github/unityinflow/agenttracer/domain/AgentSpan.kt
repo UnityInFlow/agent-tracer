@@ -35,8 +35,8 @@ data class AgentSpan(
     val costUsd: Double?,
     /** Context-window saturation, clamped to [0,100] (`unityinflow.context.saturation_pct`, D-04). */
     val saturationPct: Double?,
-    /** Ordinal plan step (`unityinflow.plan.step`, D-07). */
-    val planStep: Int?,
+    /** Ordinal plan step (`unityinflow.plan.step`, int64, D-07). */
+    val planStep: Long?,
     /** Operation classification from `gen_ai.operation.name`; `null` when unknown. */
     val operation: GenAiOperation?,
     /** Terminal outcome derived from OTel status, overridable by `unityinflow.outcome` (D-09). */

@@ -56,11 +56,24 @@ class AgentSpanExtractorValueTypeTest {
     }
 
     @Test
-    fun `int accessor narrows int64 to Int and rejects out-of-range`() {
+    fun `plan_step preserves the full int64 range as Long`() {
+        // unityinflow.plan.step is int64 in the contract — an int64 value above
+        // Int.MAX_VALUE must round-trip as a Long, NOT be silently dropped to null.
         val inRange = SpanFixtures.view(SpanFixtures.intAttr(UnityInFlowAttributes.PLAN_STEP, 3L))
-        inRange.int(UnityInFlowAttributes.PLAN_STEP) shouldBe 3
+        inRange.long(UnityInFlowAttributes.PLAN_STEP) shouldBe 3L
 
-        val tooBig = SpanFixtures.view(SpanFixtures.intAttr(UnityInFlowAttributes.PLAN_STEP, Long.MAX_VALUE))
-        tooBig.int(UnityInFlowAttributes.PLAN_STEP).shouldBeNull()
+        val aboveIntRange =
+            SpanFixtures.view(SpanFixtures.intAttr(UnityInFlowAttributes.PLAN_STEP, Long.MAX_VALUE))
+        aboveIntRange.long(UnityInFlowAttributes.PLAN_STEP) shouldBe Long.MAX_VALUE
+    }
+
+    @Test
+    fun `int accessor narrows int64 to Int and rejects out-of-range`() {
+        val key = "test.int32.key"
+        val inRange = SpanFixtures.view(SpanFixtures.intAttr(key, 3L))
+        inRange.int(key) shouldBe 3
+
+        val tooBig = SpanFixtures.view(SpanFixtures.intAttr(key, Long.MAX_VALUE))
+        tooBig.int(key).shouldBeNull()
     }
 }
