@@ -21,6 +21,8 @@ dependencies {
     testImplementation(libs.junit5)
     testImplementation(libs.kotest.assertions)
     testImplementation(libs.mockk)
+    // runTest + virtual time for the SpanWriter flush/backpressure unit test (no real sleeps).
+    testImplementation(libs.coroutines.test)
     testImplementation(libs.testcontainers.clickhouse)
     testImplementation(libs.testcontainers.junit)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

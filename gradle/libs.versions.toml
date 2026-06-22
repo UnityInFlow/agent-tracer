@@ -27,6 +27,10 @@ clickhouse-client-v2 = { module = "com.clickhouse:client-v2", version.ref = "cli
 # kotlinx-coroutines-core also carries kotlinx.coroutines.future.await for the
 # client-v2 CompletableFuture → suspend bridge.
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+# kotlinx-coroutines-test — runTest + virtual-time scheduler for the SpanWriter
+# flush-by-time / backpressure unit test (no real sleeps). Same group/version as
+# coroutines-core (official JetBrains companion artifact).
+coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 testcontainers-clickhouse = { module = "org.testcontainers:clickhouse", version.ref = "testcontainers" }
 testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "kotlin-logging" }
