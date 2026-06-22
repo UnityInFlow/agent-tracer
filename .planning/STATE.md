@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-06-22T19:06:21.549Z"
-last_activity: 2026-06-22 -- Phase 03 execution started
+stopped_at: Completed 03-02-PLAN.md
+last_updated: "2026-06-22T19:15:00.000Z"
+last_activity: 2026-06-22 -- Completed 03-02 (OTLP/HTTP receiver + conformance test)
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 13
-  completed_plans: 10
-  percent: 40
+  completed_plans: 11
+  percent: 85
 ---
 
 # Project State
@@ -26,17 +26,17 @@ See: .planning/PROJECT.md (updated 2026-06-12)
 ## Current Position
 
 Phase: 03 (otlp-ingestion) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
-Last activity: 2026-06-22 -- Phase 03 execution started
+Last activity: 2026-06-22 -- Completed 03-02 (OTLP/HTTP receiver + conformance test)
 
-Progress: [████░░░░░░] 40%
+Progress: [████████▌░] 85%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 10
+- Total plans completed: 11
 - Average duration: ~5 min
 - Total execution time: ~0.1 hours
 
@@ -62,6 +62,7 @@ Progress: [████░░░░░░] 40%
 | Phase 02 P04 | ~10 min | 3 tasks | 8 files |
 | Phase 02 P05 | ~25 min | 2 tasks | 7 files |
 | Phase 03 P01 | ~6 min | 3 tasks | 8 files |
+| Phase 03 P02 | ~10 min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,8 @@ Recent decisions affecting current work:
 - [Phase ?]: [03-01]: D-07 hex id format pinned byte-for-byte to storage/SpanFixtures (lowercase, no 0x, empty parent="") via OtlpDecoder.toHex; proven by round-trip unit test
 - [Phase ?]: [03-01]: One transport-agnostic OtlpDecoder (D-06) is the only OTLP tree walker; D-03 store-all routes every span (agent+non-agent) through AgentSpanExtractor, none dropped, no separate table
 - [Phase ?]: [03-01]: protobuf-java 4.35.1 added as a DIRECT implementation dep so it wins over opentelemetry-proto's transitive 4.34.0 (Pitfall 3)
+- [03-02]: OTLP/HTTP receiver Route.otlpTraces serves POST /v1/traces on :4318 — saturation-first 429+Retry-After (D-01 fail-fast, checked BEFORE body read), Content-Length 413 DoS guard before call.receive, 400-on-undecodable (D-02 sole transport error), 200 full/partial via OtlpResponses; accepted spans flow only through SpanWriter.send (INGEST-03)
+- [03-02]: First ktor-server-test-host testApplication conformance test in the repo; saturation flipped via real BackpressureSignal.internal set(true) (isSaturated is a non-open val — no stub/subclass); fail-fast proven behaviorally (writer received 0 spans on 429/400/413), not just by status code
 
 ### Pending Todos
 
@@ -120,6 +123,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-22T19:06:21.542Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-06-22T19:15:00.000Z
+Stopped at: Completed 03-02-PLAN.md
 Resume file: None
