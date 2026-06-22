@@ -59,7 +59,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 02-02-PLAN.md — Four idempotent DDL migrations (spans / payloads / trace_id_ts MV / agent_runs AggregatingMergeTree MV) + env-var config + client-v2 factory + startup MigrationRunner; ClickHouseSchemaIT proves apply/idempotency/EXPLAIN pruning (STOR-01, STOR-02)
+- [x] 02-02-PLAN.md — Four idempotent DDL migrations (spans / payloads / trace_id_ts MV / agent_runs AggregatingMergeTree MV) + env-var config + client-v2 factory + startup MigrationRunner; ClickHouseSchemaIT proves apply/idempotency/EXPLAIN pruning (STOR-01, STOR-02)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -122,7 +122,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Attribute Convention & Domain Model | 4/4 | Complete    | 2026-06-14 |
-| 2. ClickHouse Storage Layer | 1/4 | In progress | - |
+| 2. ClickHouse Storage Layer | 2/4 | In Progress|  |
 | 3. OTLP Ingestion | 0/TBD | Not started | - |
 | 4. Query API, Demo Emitter & Compose Stack | 0/TBD | Not started | - |
 | 5. Frontend Visualization | 0/TBD | Not started | - |

@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-06-22T08:30:00.000Z"
+last_updated: "2026-06-22T09:04:03.552Z"
 last_activity: 2026-06-22 -- Completed Phase 02 Plan 01 (storage Wave 0)
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 8
-  completed_plans: 5
-  percent: 22
+  completed_plans: 6
+  percent: 20
 ---
 
 # Project State
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-06-12)
 ## Current Position
 
 Phase: 02 (clickhouse-storage-layer) — EXECUTING
-Plan: 2 of 4
-Status: Executing Phase 02 (Plan 01 complete)
+Plan: 3 of 4
+Status: Ready to execute
 Last activity: 2026-06-22 -- Completed Phase 02 Plan 01 (storage Wave 0)
 
 Progress: [██░░░░░░░░] 25%
@@ -56,6 +56,7 @@ Progress: [██░░░░░░░░] 25%
 | Phase 01 P03 | 3min | 1 tasks | 2 files |
 | Phase 01 P04 | 2 min | 2 tasks | 5 files |
 | Phase 02 P01 | ~4 min | 2 tasks | 5 files |
+| Phase 02 P02 | 35min | 3 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,7 @@ Recent decisions affecting current work:
 - [02-01]: kotlin-logging 8.0.4 / logback 1.5.34 confirmed latest published on Maven Central (research A2 [ASSUMED] resolved) — no patch substitution
 - [02-01]: ClickHouseTestSupport is a plain `object` with `by lazy` container (JVM-wide reuse, Ryuk teardown) instead of JUnit `@Container @JvmStatic` — true cross-IT-class reuse, ~90s spin-up paid once
 - [02-01]: SpanContext is the envelope-identity seam (traceId/spanId/parentSpanId/timestamp) AgentSpan omits — fixtures mint it in Phase 2, the OTLP receiver populates it in Phase 3
+- [Phase ?]: Plan 02-02: committed ClickHouseSchemaIT despite a Testcontainers HTTP-wait Read-timeout under local Colima/QEMU (container healthy via manual curl); recorded as a verification gap to confirm green on native-Docker CI runners — did not fake a pass.
 
 ### Pending Todos
 
@@ -100,6 +102,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-22T08:30:00.000Z
+Last session: 2026-06-22T09:03:41.895Z
 Stopped at: Completed 02-01-PLAN.md
 Resume file: .planning/phases/02-clickhouse-storage-layer/02-02-PLAN.md
