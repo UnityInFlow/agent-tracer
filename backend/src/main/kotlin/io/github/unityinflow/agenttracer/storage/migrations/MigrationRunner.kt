@@ -15,9 +15,10 @@ private val logger = KotlinLogging.logger {}
  *  1. Create a `schema_migrations` tracking table (`IF NOT EXISTS`).
  *  2. List the ordered `migrations/00N_*.sql` classpath resources — lexical order = apply order.
  *  3. For each, `SELECT count() FROM schema_migrations WHERE Version = ?`; if `0`, split the
- *     file on `;` (client-v2 sends one statement per request), execute each statement (every
- *     statement is already `CREATE ... IF NOT EXISTS`), then record the applied (Version, Name)
- *     ONLY after every statement in the file succeeds.
+ *     file into statements (strip `--` line comments, THEN split on `;` — see
+ *     [splitStatements]; client-v2 sends one statement per request), execute each statement
+ *     (every statement is already `CREATE ... IF NOT EXISTS`), then record the applied
+ *     (Version, Name) ONLY after every statement in the file succeeds.
  *
  * Because each statement is independently idempotent and the version is recorded only on full
  * success, a partial-failure re-run safely re-applies the whole file (already-created objects
@@ -121,22 +122,32 @@ class MigrationRunner(
             ?.bufferedReader()
             ?.use { it.readText() }
 
-    /**
-     * Splits a multi-statement `.sql` file into individual statements on `;`, dropping
-     * blank fragments and full-line `--` comments (client-v2 sends one statement per request).
-     */
-    private fun splitStatements(sql: String): List<String> =
-        sql
-            .split(';')
-            .map { fragment ->
-                fragment
-                    .lineSequence()
-                    .filterNot { it.trimStart().startsWith("--") }
-                    .joinToString("\n")
-                    .trim()
-            }.filter { it.isNotEmpty() }
-
     companion object {
+        /**
+         * Splits a multi-statement `.sql` file into individual statements (client-v2 sends one
+         * statement per request).
+         *
+         * Comment-stripping happens BEFORE the `;` split: each line's `--` line comment is
+         * removed first (keeping only the text before the first `--`), then the comment-free
+         * text is split on `;`. This ordering is load-bearing — a `;` *inside* a `--` comment
+         * (e.g. line 13 of `001_spans.sql`: `-- Pitfall 6: retention is TTL-only; never ...`)
+         * must be gone before splitting, otherwise the comment's second half escapes the
+         * per-line comment filter and leaks as garbage into the next statement (the Phase-2
+         * UAT blocker: ClickHouse Code 62 SYNTAX_ERROR from unbalanced parentheses).
+         *
+         * Assumption: no `;` appears inside a SQL string literal in any migration (verified
+         * true for all current `migrations/00N_*.sql` files). Handling `;` inside string
+         * literals would require a fuller SQL tokenizer — deliberately not built for v0.0.1.
+         */
+        internal fun splitStatements(sql: String): List<String> =
+            sql
+                .lineSequence()
+                .map { line -> line.substringBefore("--") }
+                .joinToString("\n")
+                .split(';')
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+
         /** The ordered Phase-2 migration set; resource names sort lexically = apply order. */
         val DEFAULT_MIGRATIONS: List<Migration> =
             listOf(
