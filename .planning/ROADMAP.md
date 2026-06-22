@@ -14,7 +14,7 @@ agent-tracer is built convention-first and backend-first. Phase 1 publishes the 
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Attribute Convention & Domain Model** - Publish the agent span attribute contract and build the gen_ai/unityinflow extractor (1 UAT gap → gap-closure plan 01-04 pending) (completed 2026-06-14)
-- [ ] **Phase 2: ClickHouse Storage Layer** - Schema with typed agent columns, materialized views, payload storage, and the batching write pipeline
+- [x] **Phase 2: ClickHouse Storage Layer** - Schema with typed agent columns, materialized views, payload storage, and the batching write pipeline (completed 2026-06-22)
 - [ ] **Phase 3: OTLP Ingestion** - Spec-conformant OTLP/HTTP and OTLP/gRPC receivers feeding the single batching pipeline
 - [ ] **Phase 4: Query API, Demo Emitter & Compose Stack** - Backend milestone: DAG/filter/timeline API, synthetic trace generator, and `docker compose up` end-to-end
 - [ ] **Phase 5: Frontend Visualization** - Interactive DAG with cost overlay, saturation timeline, nested subagents, replay mode, and filters
@@ -52,7 +52,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A span's input/output payloads can be stored and retrieved individually, sufficient to power replay and a span detail panel
   4. Writes flow through a batching pipeline (flush by count/time) — sustained insert load keeps ClickHouse part counts bounded, proven against a real ClickHouse instance via Testcontainers
 
-**Plans**: 4 plans in 4 waves
+**Plans**: 5 plans in 5 waves (1 gap-closure)
 **Wave 1**
 
 - [x] 02-01-PLAN.md — Wave 0: storage + Testcontainers dependencies (client-v2, coroutines, testcontainers, kotlin-logging, logback) + shared ClickHouse 26.3 container fixture + deterministic SpanFixtures
@@ -67,7 +67,11 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 02-04-PLAN.md — AgentSpanRowMapper (256 KB cap + truncation) + SpanWriter bounded-Channel batching pipeline with retry-then-backpressure + BackpressureSignal; SpanWriterTest + PartCountIT prove flush/backpressure/no-drop + bounded parts under load (STOR-01, STOR-03, SC4)
+- [x] 02-04-PLAN.md — AgentSpanRowMapper (256 KB cap + truncation) + SpanWriter bounded-Channel batching pipeline with retry-then-backpressure + BackpressureSignal; SpanWriterTest + PartCountIT prove flush/backpressure/no-drop + bounded parts under load (STOR-01, STOR-03, SC4)
+
+**Wave 5** *(gap closure — UAT blocker)*
+
+- [ ] 02-05-PLAN.md — Gap closure: comment-safe SQL statement splitting in MigrationRunner (strip `--` comments before `;` split — a semicolon in a header comment was leaking garbage into CREATE TABLE → Code 62 SYNTAX_ERROR, schema never applied) + Docker-free regression test + observe all three storage ITs GREEN against real ClickHouse on Docker Desktop (STOR-01/02/03)
 
 ### Phase 3: OTLP Ingestion
 
@@ -122,7 +126,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Attribute Convention & Domain Model | 4/4 | Complete    | 2026-06-14 |
-| 2. ClickHouse Storage Layer | 4/4 | Complete    | 2026-06-22 |
+| 2. ClickHouse Storage Layer | 4/5 | Gap closure (UAT blocker) | 2026-06-22 |
 | 3. OTLP Ingestion | 0/TBD | Not started | - |
 | 4. Query API, Demo Emitter & Compose Stack | 0/TBD | Not started | - |
 | 5. Frontend Visualization | 0/TBD | Not started | - |
