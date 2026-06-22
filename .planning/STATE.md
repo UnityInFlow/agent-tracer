@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-06-22T09:04:03.552Z"
-last_activity: 2026-06-22 -- Completed Phase 02 Plan 01 (storage Wave 0)
+stopped_at: Completed 02-03-PLAN.md
+last_updated: "2026-06-22T11:20:00.000Z"
+last_activity: 2026-06-22 -- Completed Phase 02 Plan 03 (storage repository seam + IT)
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 8
-  completed_plans: 6
-  percent: 20
+  completed_plans: 7
+  percent: 25
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-06-12)
 ## Current Position
 
 Phase: 02 (clickhouse-storage-layer) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
-Last activity: 2026-06-22 -- Completed Phase 02 Plan 01 (storage Wave 0)
+Last activity: 2026-06-22 -- Completed Phase 02 Plan 03 (storage repository seam + IT)
 
-Progress: [██░░░░░░░░] 25%
+Progress: [███░░░░░░░] 25%
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Progress: [██░░░░░░░░] 25%
 | Phase 01 P04 | 2 min | 2 tasks | 5 files |
 | Phase 02 P01 | ~4 min | 2 tasks | 5 files |
 | Phase 02 P02 | 35min | 3 tasks | 1 files |
+| Phase 02 P03 | ~22 min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,9 @@ Recent decisions affecting current work:
 - [02-01]: ClickHouseTestSupport is a plain `object` with `by lazy` container (JVM-wide reuse, Ryuk teardown) instead of JUnit `@Container @JvmStatic` — true cross-IT-class reuse, ~90s spin-up paid once
 - [02-01]: SpanContext is the envelope-identity seam (traceId/spanId/parentSpanId/timestamp) AgentSpan omits — fixtures mint it in Phase 2, the OTLP receiver populates it in Phase 3
 - [Phase ?]: Plan 02-02: committed ClickHouseSchemaIT despite a Testcontainers HTTP-wait Read-timeout under local Colima/QEMU (container healthy via manual curl); recorded as a verification gap to confirm green on native-Docker CI runners — did not fake a pass.
+- [02-03]: SpanRow/PayloadRow are mutable `var` plain classes (not data classes) — client-v2 0.9.8 POJOSerDe binds DDL columns to JavaBean getters/setters and needs a no-arg ctor on the read path; mutability isolated to the row classes + documented (sanctioned var-rule exception). AgentRunRow stays an immutable data class (read-only).
+- [02-03]: Repository is the sole ClickHouse-SQL holder; every user value bound as a {name:Type} placeholder (T-02-06), writes are typed RowBinary POJO inserts; FINAL only on aggregating tables, never the hot spans scan.
+- [02-03]: Committed SpanRepositoryIT despite the same Testcontainers HTTP-wait gap under Colima/QEMU (container healthy via manual curl /ping → HTTP 200); did not fake a pass — runs green on native-Docker CI.
 
 ### Pending Todos
 
@@ -102,6 +106,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-22T09:03:41.895Z
-Stopped at: Completed 02-01-PLAN.md
-Resume file: .planning/phases/02-clickhouse-storage-layer/02-02-PLAN.md
+Last session: 2026-06-22T11:20:00.000Z
+Stopped at: Completed 02-03-PLAN.md
+Resume file: .planning/phases/02-clickhouse-storage-layer/02-04-PLAN.md

@@ -23,7 +23,7 @@ Requirements for v0.0.1. Each maps to roadmap phases.
 
 - [x] **STOR-01**: ClickHouse schema stores spans, traces, and agent_runs with typed first-class columns for agent fields (tokens, cost, saturation, skill, model)
 - [x] **STOR-02**: Trace lookup by trace_id is served by a materialized view (no full table scan)
-- [ ] **STOR-03**: Span input/output payloads are stored, enabling replay and the span detail panel
+- [x] **STOR-03**: Span input/output payloads are stored, enabling replay and the span detail panel
 
 ### Query API
 
@@ -92,7 +92,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CONV-03 | Phase 1 | Complete |
 | STOR-01 | Phase 2 | Complete |
 | STOR-02 | Phase 2 | Complete |
-| STOR-03 | Phase 2 | Pending |
+| STOR-03 | Phase 2 | Complete |
 | INGEST-01 | Phase 3 | Pending |
 | INGEST-02 | Phase 3 | Pending |
 | INGEST-03 | Phase 3 | Pending |

@@ -63,7 +63,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 02-03-PLAN.md — Row POJOs + SpanRepository seam + ClickHouseSpanRepository (RowBinary insert, two-step trace-by-id, agent_runs listRuns, payload point-lookup, all parameterized); SpanRepositoryIT proves round-trips + rollup + payloads (STOR-01, STOR-02, STOR-03)
+- [x] 02-03-PLAN.md — Row POJOs + SpanRepository seam + ClickHouseSpanRepository (RowBinary insert, two-step trace-by-id, agent_runs listRuns, payload point-lookup, all parameterized); SpanRepositoryIT proves round-trips + rollup + payloads (STOR-01, STOR-02, STOR-03)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
