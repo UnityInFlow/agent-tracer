@@ -2,11 +2,17 @@
 
 > Every symbol/file the four plans create. Downstream phases (3 ingestion, 4 query API) consume the **bold** seams.
 
+## Span-context carrier (Plan 02-01) — the OTLP-envelope identity seam
+
+| Symbol | File | Public surface |
+|--------|------|----------------|
+| **`SpanContext`** | `storage/SpanContext.kt` | immutable `data class SpanContext(traceId: String, spanId: String, parentSpanId: String, timestamp: Instant)` — the OTLP-envelope identity `AgentSpan` deliberately omits (attributes-only). Sole source of the mandatory `TraceId`/`SpanId`/`ParentSpanId`/`Timestamp` schema columns. Phase 2 mints it via fixtures; **the Phase-3 receiver populates it from the real OTLP span envelope**. |
+
 ## DDL resources (Plan 02-02)
 
 | Path | Object(s) created |
 |------|-------------------|
-| `backend/src/main/resources/migrations/001_spans.sql` | `spans` (MergeTree, wide typed-column table) + `idx_trace_id` bloom-filter skip index |
+| `backend/src/main/resources/migrations/001_spans.sql` | `spans` (MergeTree, wide typed-column table; identity cols Timestamp/TraceId/SpanId/ParentSpanId) + `idx_trace_id` bloom-filter skip index |
 | `backend/src/main/resources/migrations/002_payloads.sql` | `payloads` (MergeTree, keyed `(TraceId, SpanId)`) |
 | `backend/src/main/resources/migrations/003_trace_id_ts_mv.sql` | `trace_id_ts` (AggregatingMergeTree target) + `trace_id_ts_mv` materialized view |
 | `backend/src/main/resources/migrations/004_agent_runs_mv.sql` | `agent_runs` (AggregatingMergeTree target) + `agent_runs_mv` materialized view |
@@ -26,8 +32,8 @@
 |--------|------|----------------|
 | **`SpanRepository`** | `storage/SpanRepository.kt` | `suspend writeBatch(spans, payloads): Result<Unit>` · `suspend getTraceById(traceId): Result<List<SpanRow>>` · `suspend listRuns(filter: RunFilter): Result<List<AgentRunRow>>` · `suspend getPayload(traceId, spanId): Result<PayloadRow?>` |
 | `ClickHouseSpanRepository` | `storage/ClickHouseSpanRepository.kt` | `SpanRepository` impl (RowBinary insert, two-step trace lookup, parameterized reads) |
-| `SpanRow` | `storage/SpanRow.kt` | client-v2 register POJO mirroring `spans` columns |
-| `PayloadRow` | `storage/PayloadRow.kt` | POJO mirroring `payloads` columns |
+| `SpanRow` | `storage/SpanRow.kt` | client-v2 register POJO mirroring `spans` columns (incl. SpanContext-sourced identity Timestamp/TraceId/SpanId/ParentSpanId) |
+| `PayloadRow` | `storage/PayloadRow.kt` | POJO mirroring `payloads` columns (TraceId/SpanId/Timestamp from SpanContext) |
 | `AgentRunRow` | `storage/AgentRunRow.kt` | read model for `agent_runs` rollup |
 | `RunFilter` | `storage/RunFilter.kt` | immutable filter (agent, model, cost range, outcome, date range) |
 
@@ -35,21 +41,21 @@
 
 | Symbol | File | Public surface |
 |--------|------|----------------|
-| **`SpanWriter`** | `storage/pipeline/SpanWriter.kt` | `suspend fun send(span: AgentSpan)` (suspends on full = backpressure) · `suspend fun drainAndClose()` · `val backpressure: StateFlow<Boolean>` |
+| **`SpanWriter`** | `storage/pipeline/SpanWriter.kt` | `suspend fun send(span: AgentSpan, context: SpanContext)` (carries envelope identity; suspends on full = backpressure) · `suspend fun drainAndClose()` · `val backpressure: StateFlow<Boolean>` |
 | **`BackpressureSignal`** | `storage/pipeline/BackpressureSignal.kt` | read-only `StateFlow<Boolean> saturated` — the Phase-3 receiver observes this to map to OTLP `RESOURCE_EXHAUSTED`/`UNAVAILABLE` |
-| `AgentSpanRowMapper` | `storage/AgentSpanRowMapper.kt` | `map(AgentSpan): Pair<SpanRow, PayloadRow>` — 256 KB cap + truncation enforced at write time |
+| `AgentSpanRowMapper` | `storage/AgentSpanRowMapper.kt` | `map(span: AgentSpan, context: SpanContext): Pair<SpanRow, PayloadRow>` — identity from SpanContext + 256 KB cap + truncation enforced at write time |
 
 ## Test infrastructure (Plan 02-01) + per-plan ITs
 
 | Path | Purpose |
 |------|---------|
 | `…/test/…/storage/ClickHouseTestSupport.kt` | shared singleton ClickHouse 26.3 container + `newClient()` |
-| `…/test/…/storage/SpanFixtures.kt` | deterministic AgentSpan/row builders |
+| `…/test/…/storage/SpanFixtures.kt` | deterministic `(AgentSpan, SpanContext)` builders (full/minimal/truncatedPayload) + `traceOf(n, …)` minting N spans on one TraceId with uniform agentName/model |
 | `…/test/…/storage/ClickHouseSchemaIT.kt` | DDL apply, idempotent re-run, EXPLAIN pruning (STOR-02) |
 | `…/test/…/storage/SpanRepositoryIT.kt` | round-trips, payload retrieval, rollup + dedup (STOR-01/03) |
-| `…/test/…/storage/AgentSpanRowMapperTest.kt` | cap/truncation/null-mapping unit |
+| `…/test/…/storage/AgentSpanRowMapperTest.kt` | identity-from-context, cap/truncation/null-mapping unit |
 | `…/test/…/storage/pipeline/SpanWriterTest.kt` | flush/backpressure/no-drop/drain unit (MockK) |
-| `…/test/…/storage/PartCountIT.kt` | bounded `system.parts` under sustained load (SC4) |
+| `…/test/…/storage/PartCountIT.kt` | bounded `system.parts` under sustained load with real multi-partition identity (SC4) |
 
 ## New env-var contract (Compose wiring is Phase 4 / DIST-01)
 
@@ -88,6 +94,7 @@ Every source item is COVERED by a plan. No MISSING items → finalized.
 | client-v2 register/insert/query + CompletableFuture.await() bridge | 02-03 ClickHouseSpanRepository | COVERED |
 | Hand-rolled versioned startup MigrationRunner + schema_migrations | 02-02 MigrationRunner | COVERED |
 | Channel-based batching pipeline with retry-then-backpressure | 02-04 SpanWriter | COVERED |
+| Span-context envelope identity seam for Phase-3 receiver | 02-01 SpanContext (threaded through 02-03 rows / 02-04 mapper+writer) | COVERED |
 | Testcontainers verification (EXPLAIN pruning, system.parts) | 02-02 / 02-04 ITs | COVERED |
 | Validation Architecture (Wave 0 gaps, test map) | 02-01 + 02-VALIDATION.md | COVERED |
 
@@ -104,4 +111,5 @@ Every source item is COVERED by a plan. No MISSING items → finalized.
 | D-07 tests scoped to complete/in-order + dedup; defer late-merge | 02-03 SpanRepositoryIT assertions | COVERED |
 | D-08 bounded retry then backpressure, first-class signal | 02-04 SpanWriter + BackpressureSignal | COVERED |
 
-**Excluded (not gaps):** OTLP receivers (Phase 3), query REST API / DAG assembly (Phase 4), React frontend (Phase 5), deep late/out-of-order replay-merge (deferred to Phase 4 per D-07), disk-spill/WAL durability + async_insert (Deferred Ideas).
+**Excluded (not gaps):** OTLP receivers (Phase 3 — also supplies real `SpanContext` envelope values), query REST API / DAG assembly (Phase 4), React frontend (Phase 5), deep late/out-of-order replay-merge (deferred to Phase 4 per D-07), disk-spill/WAL durability + async_insert (Deferred Ideas).
+</content>

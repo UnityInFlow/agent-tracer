@@ -651,14 +651,14 @@ class ClickHouseSchemaIT {
 
 **These are the only `[ASSUMED]` items; everything else is `[VERIFIED]` or `[CITED]`.** The planner should add a quick javadoc confirmation step for A3/A4 (exact method names) but they do not block schema/pipeline design.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Exact client-v2 0.9.8 method names for `getTableSchema` / binary reader construction (A3/A4).**
+1. **RESOLVED: Exact client-v2 0.9.8 method names for `getTableSchema` / binary reader construction (A3/A4).** RESOLVED: confirm-at-implementation — exact factory names are pinned against the 0.9.8 javadoc during the repository task; wired into 02-03 `read_first` (Task 1 & Task 2). Does not affect schema or pipeline design.
    - What we know: `register(Class, TableSchema)`, `insert(table, List<?>, InsertSettings)`, `query(...)`, `ClickHouseBinaryFormatReader`, `GenericRecord` are all verified API surface.
    - What's unclear: the precise factory method names (`getTableSchema` vs `getTableSchemaFromQuery`; `newBinaryFormatReader` vs `getReader`).
    - Recommendation: confirm against the 0.9.8 javadoc or the `clickhouse-java/examples/client-v2` sources during planning of the repository task; does not affect schema or pipeline design.
 
-2. **`agent_runs` Outcome semantics for incomplete traces (intentionally deferred).**
+2. **RESOLVED: `agent_runs` Outcome semantics for incomplete traces (intentionally deferred).** RESOLVED: deferred to Phase 4 per D-07 — Phase-2 tests (02-03 Task 3) assert only complete/in-order trace correctness, so Phase 4 can extend the late/never-arriving-span merge rule without contradicting Phase-2 tests.
    - What we know: D-07 scopes Phase-2 tests to complete/in-order traces; AggregatingMergeTree keeps max-wins reachable.
    - What's unclear: the exact late/never-arriving-span merge rule (Phase 4).
    - Recommendation: do not solve now; ensure tests only assert complete-trace correctness so Phase 4 can extend without contradicting Phase-2 tests.
