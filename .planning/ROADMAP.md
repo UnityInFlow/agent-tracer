@@ -98,7 +98,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Wave 3** *(blocked on Wave 2)*
 
-- [ ] 03-04-PLAN.md — App bootstrap: TracerApplication fun main() (migrate→serve→drain, both servers, D-04/D-05) + real-exporter Testcontainers ITs: OtlpHttpReceiverIT (SC1, closes the D-07 round-trip), OtlpGrpcReceiverIT (SC2, >4 MB span), TracerApplicationIT (boot ordering + drain-no-loss) (INGEST-01/02/03)
+- [x] 03-04-PLAN.md — App bootstrap: TracerApplication fun main() (migrate→serve→drain, both servers, D-04/D-05) + real-exporter Testcontainers ITs: OtlpHttpReceiverIT (SC1, closes the D-07 round-trip + D-03 generic store-all span), OtlpGrpcReceiverIT (SC2, 6 MB span truncate-not-reject), TracerApplicationIT (boot ordering + drain-no-loss). Compiles + lints clean + SC4 grep gate clean; ITs implemented with real OtlpHttp/GrpcSpanExporter — operation-level proof deferred to native Docker/CI (sandbox `ContainerLaunchException: testcontainers/ryuk:0.12.0`, the documented Phase-2/kore infra limit, not code) (INGEST-01/02/03)
 
 ### Phase 4: Query API, Demo Emitter & Compose Stack
 

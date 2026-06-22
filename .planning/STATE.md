@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-02-PLAN.md
-last_updated: "2026-06-22T19:24:31.167Z"
-last_activity: 2026-06-22 -- Completed 03-02 (OTLP/HTTP receiver + conformance test)
+stopped_at: Completed 03-04-PLAN.md
+last_updated: "2026-06-22T20:05:00.000Z"
+last_activity: 2026-06-22 -- Completed 03-04 (app bootstrap + 3 real-exporter end-to-end ITs; operation-level IT proof deferred to native Docker/CI)
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 13
-  completed_plans: 12
-  percent: 40
+  completed_plans: 13
+  percent: 44
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-06-12)
 
 ## Current Position
 
-Phase: 03 (otlp-ingestion) — EXECUTING
-Plan: 4 of 4
-Status: Ready to execute
-Last activity: 2026-06-22 -- Completed 03-02 (OTLP/HTTP receiver + conformance test)
+Phase: 03 (otlp-ingestion) — EXECUTING (all 4 plans implemented; phase close pending native-Docker IT observation)
+Plan: 4 of 4 — COMPLETE (code + compile + lint; operation-level ITs deferred to native Docker/CI)
+Status: Phase 3 code complete; carry-forward = observe the 3 receiver ITs + Phase-2 storage ITs green on native Docker/CI to flip INGEST-01/02/03 from phase-gated to complete (same gate-closure path as decision [02-05])
+Last activity: 2026-06-22 -- Completed 03-04 (app bootstrap + 3 real-exporter end-to-end ITs)
 
-Progress: [████████▌░] 85%
+Progress: [██████████] 100% (Phase 3 plans)
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Progress: [████████▌░] 85%
 | Phase 03 P01 | ~6 min | 3 tasks | 8 files |
 | Phase 03 P02 | ~10 min | 2 tasks | 1 files |
 | Phase 03 P03 | 7min | 2 tasks | 4 files |
+| Phase 03 P04 | ~18 min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -101,6 +102,9 @@ Recent decisions affecting current work:
 - [Phase ?]: [03-01]: protobuf-java 4.35.1 added as a DIRECT implementation dep so it wins over opentelemetry-proto's transitive 4.34.0 (Pitfall 3)
 - [03-02]: OTLP/HTTP receiver Route.otlpTraces serves POST /v1/traces on :4318 — saturation-first 429+Retry-After (D-01 fail-fast, checked BEFORE body read), Content-Length 413 DoS guard before call.receive, 400-on-undecodable (D-02 sole transport error), 200 full/partial via OtlpResponses; accepted spans flow only through SpanWriter.send (INGEST-03)
 - [03-02]: First ktor-server-test-host testApplication conformance test in the repo; saturation flipped via real BackpressureSignal.internal set(true) (isSaturated is a non-open val — no stub/subclass); fail-fast proven behaviorally (writer received 0 spans on 429/400/413), not just by status code
+- [03-04]: TracerApplication fun main() = manual-DI migrate→serve→drain (D-04/D-05): MigrationRunner.runMigrations().getOrThrow() BEFORE any port opens; both transports (:4318 Ktor + :4317 standalone io.grpc.Server with maxInboundMessageSize=32 MiB) share ONE SpanWriter + ONE backpressure signal; shutdown() closes ports FIRST, then drainAndClose(), then client.close(). 1-arg ClickHouseSpanRepository(client) (factory sets the default database; the 2-arg RESEARCH form does not compile). bootReceivers/installOtlp/shutdown extracted as testable in-process seams (no spawned JVM)
+- [03-04]: 3 real-exporter Testcontainers ITs implemented — OtlpHttpReceiverIT (real OtlpHttpSpanExporter → getTraceById known-hex round-trip closes D-07 + a stock generic GET /healthz span lands via the store-all D-03 path), OtlpGrpcReceiverIT (real OtlpGrpcSpanExporter, PLAINTEXT NettyServerBuilder addressed http://, bounded forceFlush().join(10s).isSuccess, 6 MB span truncate-not-reject SC2), TracerApplicationIT (boot-ordering + drain-no-loss D-04). Block-body @Test (Pitfall 5), coroutine-delay poll, distinct TraceId, fixed IdGenerator for known hex ids
+- [03-04]: Operation-level IT proof DEFERRED to native Docker/CI — the three ITs were run and fail SOLELY with `ContainerLaunchException: testcontainers/ryuk:0.12.0` (the documented Phase-2/kore Colima/QEMU Ryuk limit, not code). No fake pass, no @Disabled, no IT weakening. Plan marked complete on code+compile+lint+SC4-grep-gate basis, mirroring the kore v0.1.0 D-03 / Phase-2 [02-02..02-04] precedent; native-Docker green observation is the carry-forward that closes SC1/SC2/SC4 + flips INGEST-01/02/03
 
 ### Pending Todos
 
@@ -120,10 +124,10 @@ Items acknowledged and carried forward from previous milestone close:
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
-| *(none)* | | | |
+| Integration tests | Phase-3 receiver ITs (OtlpHttpReceiverIT / OtlpGrpcReceiverIT / TracerApplicationIT) + Phase-2 storage ITs — operation-level run | Implemented + compile + lint clean; fail in sandbox only on `ContainerLaunchException: testcontainers/ryuk:0.12.0` (infra). Observe green on native Docker/CI to close SC1/SC2/SC4 + flip INGEST-01/02/03 | 03-04 (2026-06-22) |
 
 ## Session Continuity
 
-Last session: 2026-06-22T19:24:25.672Z
-Stopped at: Completed 03-02-PLAN.md
+Last session: 2026-06-22T20:05:00.000Z
+Stopped at: Completed 03-04-PLAN.md
 Resume file: None
