@@ -7,6 +7,11 @@ opentelemetry-proto = "1.10.0-alpha"
 protobuf-java = "4.35.1"
 kotlinter = "5.0.0"
 nmcp = "1.4.4"
+clickhouse-client = "0.9.8"
+coroutines = "1.11.0"
+testcontainers = "1.21.4"
+kotlin-logging = "8.0.4"
+logback = "1.5.34"
 
 [libraries]
 junit5 = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit5" }
@@ -16,6 +21,16 @@ mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 # Lives in the backend module only; agent-semconv must NOT depend on it.
 opentelemetry-proto = { module = "io.opentelemetry.proto:opentelemetry-proto", version.ref = "opentelemetry-proto" }
 protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf-java" }
+# ── Storage layer (Phase 2) ────────────────────────────────────────────────
+# ClickHouse client-v2 (official recommendation for new apps over JDBC).
+clickhouse-client-v2 = { module = "com.clickhouse:client-v2", version.ref = "clickhouse-client" }
+# kotlinx-coroutines-core also carries kotlinx.coroutines.future.await for the
+# client-v2 CompletableFuture → suspend bridge.
+coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+testcontainers-clickhouse = { module = "org.testcontainers:clickhouse", version.ref = "testcontainers" }
+testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
+kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "kotlin-logging" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
