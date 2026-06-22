@@ -53,10 +53,20 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Writes flow through a batching pipeline (flush by count/time) — sustained insert load keeps ClickHouse part counts bounded, proven against a real ClickHouse instance via Testcontainers
 
 **Plans**: 4 plans in 4 waves
+**Wave 1**
 
 - [ ] 02-01-PLAN.md — Wave 0: storage + Testcontainers dependencies (client-v2, coroutines, testcontainers, kotlin-logging, logback) + shared ClickHouse 26.3 container fixture + deterministic SpanFixtures
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 02-02-PLAN.md — Four idempotent DDL migrations (spans / payloads / trace_id_ts MV / agent_runs AggregatingMergeTree MV) + env-var config + client-v2 factory + startup MigrationRunner; ClickHouseSchemaIT proves apply/idempotency/EXPLAIN pruning (STOR-01, STOR-02)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 02-03-PLAN.md — Row POJOs + SpanRepository seam + ClickHouseSpanRepository (RowBinary insert, two-step trace-by-id, agent_runs listRuns, payload point-lookup, all parameterized); SpanRepositoryIT proves round-trips + rollup + payloads (STOR-01, STOR-02, STOR-03)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 02-04-PLAN.md — AgentSpanRowMapper (256 KB cap + truncation) + SpanWriter bounded-Channel batching pipeline with retry-then-backpressure + BackpressureSignal; SpanWriterTest + PartCountIT prove flush/backpressure/no-drop + bounded parts under load (STOR-01, STOR-03, SC4)
 
 ### Phase 3: OTLP Ingestion
