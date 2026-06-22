@@ -41,6 +41,8 @@ dependencies {
     testImplementation(libs.otel.sdk)
     testImplementation(libs.otel.exporter.otlp)
     testImplementation(libs.ktor.server.test.host)
+    // In-process gRPC channel for the OtlpGrpcService contract test (no socket, no Docker).
+    testImplementation(libs.grpc.inprocess)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

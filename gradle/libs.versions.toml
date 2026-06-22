@@ -49,6 +49,9 @@ ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref 
 grpc-netty-shaded = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
 grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
 grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
+# In-process gRPC transport (split out of grpc-core since 1.66) — drives the OtlpGrpcService
+# contract test over an in-memory channel: no socket, no Docker (test scope only).
+grpc-inprocess = { module = "io.grpc:grpc-inprocess", version.ref = "grpc" }
 # Real OTel SDK exporters drive the end-to-end receiver integration tests (test scope only).
 otel-bom = { module = "io.opentelemetry:opentelemetry-bom", version.ref = "opentelemetry-sdk" }
 otel-sdk = { module = "io.opentelemetry:opentelemetry-sdk" }
