@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-03-PLAN.md
-last_updated: "2026-06-22T11:20:00.000Z"
-last_activity: 2026-06-22 -- Completed Phase 02 Plan 03 (storage repository seam + IT)
+stopped_at: Completed 02-04-PLAN.md (Phase 02 complete)
+last_updated: "2026-06-22T09:31:33.000Z"
+last_activity: 2026-06-22 -- Completed Phase 02 Plan 04 (batching write pipeline: SpanWriter + AgentSpanRowMapper); Phase 02 complete
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 8
-  completed_plans: 7
-  percent: 25
+  completed_plans: 8
+  percent: 40
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-06-12)
 
 ## Current Position
 
-Phase: 02 (clickhouse-storage-layer) — EXECUTING
-Plan: 4 of 4
-Status: Ready to execute
-Last activity: 2026-06-22 -- Completed Phase 02 Plan 03 (storage repository seam + IT)
+Phase: 02 (clickhouse-storage-layer) — COMPLETE
+Plan: 4 of 4 (all complete)
+Status: Phase 02 complete — ready to plan Phase 03 (OTLP Ingestion)
+Last activity: 2026-06-22 -- Completed Phase 02 Plan 04 (batching write pipeline); Phase 02 complete
 
-Progress: [███░░░░░░░] 25%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
@@ -58,6 +58,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 02 P01 | ~4 min | 2 tasks | 5 files |
 | Phase 02 P02 | 35min | 3 tasks | 1 files |
 | Phase 02 P03 | ~22 min | 3 tasks | 7 files |
+| Phase 02 P04 | ~10 min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,10 @@ Recent decisions affecting current work:
 - [02-03]: SpanRow/PayloadRow are mutable `var` plain classes (not data classes) — client-v2 0.9.8 POJOSerDe binds DDL columns to JavaBean getters/setters and needs a no-arg ctor on the read path; mutability isolated to the row classes + documented (sanctioned var-rule exception). AgentRunRow stays an immutable data class (read-only).
 - [02-03]: Repository is the sole ClickHouse-SQL holder; every user value bound as a {name:Type} placeholder (T-02-06), writes are typed RowBinary POJO inserts; FINAL only on aggregating tables, never the hot spans scan.
 - [02-03]: Committed SpanRepositoryIT despite the same Testcontainers HTTP-wait gap under Colima/QEMU (container healthy via manual curl /ping → HTTP 200); did not fake a pass — runs green on native-Docker CI.
+- [02-04]: SpanWriter intake is a BOUNDED Channel(capacity) carrying immutable (AgentSpan, SpanContext) envelopes; send suspends on full (= backpressure, never drops, never UNLIMITED) — T-02-10. Single writer coroutine flushes by count/time via select{}+onTimeout; failed flush retries with bounded exponential backoff (delay, never Thread.sleep) then retains the batch (carried forward) + asserts saturated. drainAndClose re-flushes the tail (no loss on shutdown).
+- [02-04]: 256 KB-per-field payload cap measured in encoded UTF-8 BYTES, truncated on a char boundary (CharsetDecoder IGNORE → no mid-codepoint split); the larger of (emitter-reported, locally-measured) original size is preserved (D-13, no double-truncate).
+- [02-04]: Added kotlinx-coroutines-test (testImplementation, same group/version as coroutines-core 1.11.0) for runTest/virtual-time flush-by-time assertions — first-party JetBrains companion, not a slopcheck-gated install.
+- [02-04]: PartCountIT (SC4) committed but unobserved-passing locally — identical Testcontainers HTTP-wait read-timeout under Colima/QEMU (initializationError, class never instantiates); container proven healthy via manual docker run + curl /ping → HTTP 200 in ~5ms. SpanWriterTest (pure JVM) exercises the same send→flush→writeBatch path and passes. Runs green on native-Docker CI.
 
 ### Pending Todos
 
@@ -106,6 +111,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-22T11:20:00.000Z
-Stopped at: Completed 02-03-PLAN.md
-Resume file: .planning/phases/02-clickhouse-storage-layer/02-04-PLAN.md
+Last session: 2026-06-22T09:31:33.000Z
+Stopped at: Completed 02-04-PLAN.md (Phase 02 complete)
+Resume file: None — Phase 02 done; next run /gsd-discuss-phase 3 (OTLP Ingestion)
