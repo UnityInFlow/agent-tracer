@@ -5,6 +5,9 @@ kotest = "6.1.11"
 mockk = "1.14.11"
 opentelemetry-proto = "1.10.0-alpha"
 protobuf-java = "4.35.1"
+ktor = "3.5.0"
+grpc = "1.82.0"
+opentelemetry-sdk = "1.63.0"
 kotlinter = "5.0.0"
 nmcp = "1.4.4"
 clickhouse-client = "0.9.8"
@@ -35,6 +38,21 @@ testcontainers-clickhouse = { module = "org.testcontainers:clickhouse", version.
 testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "kotlin-logging" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+# ── OTLP receivers (Phase 3) ───────────────────────────────────────────────
+# Ktor Netty hosts the OTLP/HTTP route (:4318); standalone io.grpc.Server hosts
+# OTLP/gRPC (:4317) — Ktor cannot host gRPC. test-host drives in-process route tests.
+ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
+ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
+ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
+# grpc-netty-shaded carries a shaded Netty (no clash with Ktor's Netty in one JVM);
+# stub + protobuf supply the runtime the pre-generated TraceServiceGrpc stubs need.
+grpc-netty-shaded = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
+grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
+grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
+# Real OTel SDK exporters drive the end-to-end receiver integration tests (test scope only).
+otel-bom = { module = "io.opentelemetry:opentelemetry-bom", version.ref = "opentelemetry-sdk" }
+otel-sdk = { module = "io.opentelemetry:opentelemetry-sdk" }
+otel-exporter-otlp = { module = "io.opentelemetry:opentelemetry-exporter-otlp" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

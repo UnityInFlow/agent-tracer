@@ -18,6 +18,17 @@ dependencies {
     implementation(libs.kotlin.logging)
     runtimeOnly(libs.logback.classic)
 
+    // ── OTLP receivers (Phase 3) ───────────────────────────────────────────
+    // Ktor Netty hosts the OTLP/HTTP route; standalone io.grpc.Server hosts OTLP/gRPC.
+    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.netty)
+    implementation(libs.grpc.netty.shaded)
+    implementation(libs.grpc.stub)
+    implementation(libs.grpc.protobuf)
+    // protobuf-java as a DIRECT dependency so 4.35.1 wins over opentelemetry-proto's
+    // transitive 4.34.0 (Pitfall 3 — a regression triggers NoSuchMethodError at runtime).
+    implementation(libs.protobuf.java)
+
     testImplementation(libs.junit5)
     testImplementation(libs.kotest.assertions)
     testImplementation(libs.mockk)
@@ -25,6 +36,11 @@ dependencies {
     testImplementation(libs.coroutines.test)
     testImplementation(libs.testcontainers.clickhouse)
     testImplementation(libs.testcontainers.junit)
+    // Real OTel SDK exporters drive the end-to-end receiver integration tests.
+    testImplementation(platform(libs.otel.bom))
+    testImplementation(libs.otel.sdk)
+    testImplementation(libs.otel.exporter.otlp)
+    testImplementation(libs.ktor.server.test.host)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
