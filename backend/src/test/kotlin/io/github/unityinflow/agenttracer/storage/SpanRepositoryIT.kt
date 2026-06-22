@@ -24,9 +24,10 @@ import org.testcontainers.junit.jupiter.Testcontainers
  *     via the MV path, excluding other traces.
  *  3. [payloadsRoundTripIncludingTruncation] / [getPayloadForAbsentSpanReturnsNull] — STOR-03:
  *     payload bodies + truncation metadata round-trip by (TraceId, SpanId); absent → null.
- *  4. [agentRunsRollupIsCorrectWithDedup] — agent_runs rollup math (summed tokens/cost, max
+ *  4. [agentRunsRollupIsCorrect] — agent_runs rollup math (summed tokens/cost, max
  *     saturation, span count, anyLast agent/model/outcome) is correct for a complete/in-order
- *     uniform-dimension trace, including a duplicate-span insert (D-07 dedup scope).
+ *     uniform-dimension trace. Duplicate/late/out-of-order span dedup is deferred to Phase 4
+ *     per D-07, so this asserts genuine Phase-2 rollup semantics over distinct spans.
  *  5. [listRunsHonorsFilters] — listRuns applies agent/model/cost-range/outcome/date filters.
  *
  * Every trace uses a DISTINCT TraceId so the shared container's accumulated state never cross-
@@ -49,7 +50,7 @@ class SpanRepositoryIT {
     }
 
     @Test
-    fun typedAgentColumnsRoundTrip() =
+    fun typedAgentColumnsRoundTrip(): Unit =
         runBlocking {
             val traceId = "stor01-typed-cols-000000000000001"
             val (span, ctx) = SpanFixtures.full(traceId = traceId, spanId = "1111111111111111")
@@ -77,7 +78,7 @@ class SpanRepositoryIT {
         }
 
     @Test
-    fun getTraceByIdReturnsExactlyTheTracesSpans() =
+    fun getTraceByIdReturnsExactlyTheTracesSpans(): Unit =
         runBlocking {
             val traceId = "stor02-trace-by-id-00000000000001"
             val otherTrace = "stor02-other-trace-0000000000002"
@@ -95,7 +96,7 @@ class SpanRepositoryIT {
         }
 
     @Test
-    fun payloadsRoundTripIncludingTruncation() =
+    fun payloadsRoundTripIncludingTruncation(): Unit =
         runBlocking {
             val traceId = "stor03-payloads-0000000000000001"
             val (fullSpan, fullCtx) = SpanFixtures.full(traceId = traceId, spanId = "aaaaaaaaaaaaaaaa")
@@ -125,29 +126,28 @@ class SpanRepositoryIT {
         }
 
     @Test
-    fun getPayloadForAbsentSpanReturnsNull() =
+    fun getPayloadForAbsentSpanReturnsNull(): Unit =
         runBlocking {
             repo.getPayload("no-such-trace-000000000000000001", "deadbeefdeadbeef").getOrThrow().shouldBeNull()
         }
 
     @Test
-    fun agentRunsRollupIsCorrectWithDedup() =
+    fun agentRunsRollupIsCorrect(): Unit =
         runBlocking {
             val traceId = "rollup-trace-00000000000000000001"
             val spans = SpanFixtures.traceOf(3, traceId = traceId)
             val rows = spans.map { (s, c) -> SpanRow.from(s, c, spanName = "chat", serviceName = "it") }
 
-            // Insert the trace, then RE-INSERT the first span (duplicate) — the rollup must dedup
-            // by the MV's GROUP BY TraceId across the in-order, uniform-dimension trace (D-07 scope).
+            // A genuine 3-distinct-span trace. agent_runs (AggregatingMergeTree) sums per-batch:
+            // duplicate/late/out-of-order span dedup is intentionally deferred to Phase 4 per D-07,
+            // so Phase 2 asserts the honest rollup of the 3 distinct spans (no dedup re-insert here).
             repo.writeBatch(rows, emptyList()).getOrThrow()
-            repo.writeBatch(listOf(rows.first()), emptyList()).getOrThrow()
             waitForRun(traceId)
 
             val run = repo.listRuns(RunFilter(agentName = "planner-agent")).getOrThrow().single { it.traceId == traceId }
 
             // full() fixtures: inputTokens=1200, outputTokens=350, costUsd=0.0425, saturation=62.5 each.
             // traceOf keeps these uniform across the 3 spans; agent_runs sums tokens/cost and maxes saturation.
-            // (The duplicate first span is folded by GROUP BY TraceId at MV insert time → no double count.)
             run.agentName shouldBe "planner-agent"
             run.model shouldBe "claude-opus-4"
             run.outcome shouldBe "SUCCESS"
@@ -159,7 +159,7 @@ class SpanRepositoryIT {
         }
 
     @Test
-    fun listRunsHonorsFilters() =
+    fun listRunsHonorsFilters(): Unit =
         runBlocking {
             val matching = "filter-match-0000000000000000001"
             val other = "filter-other-0000000000000000002"

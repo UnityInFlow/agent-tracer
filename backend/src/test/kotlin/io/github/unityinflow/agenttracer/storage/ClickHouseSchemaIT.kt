@@ -2,7 +2,6 @@ package io.github.unityinflow.agenttracer.storage
 
 import io.github.unityinflow.agenttracer.storage.migrations.MigrationRunner
 import io.kotest.matchers.collections.shouldContainAll
-import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.longs.shouldBeGreaterThan
 import io.kotest.matchers.longs.shouldBeLessThan
 import io.kotest.matchers.shouldBe
@@ -40,6 +39,13 @@ class ClickHouseSchemaIT {
         /** ClickHouse DateTime64 literal format the parameterized inserts use. */
         val TS_FORMAT: DateTimeFormatter =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSSSSS").withZone(ZoneOffset.UTC)
+
+        /**
+         * Distinct recent days of background spans seeded before the pruning assertion, each its
+         * own daily partition. Kept under the `spans` 14-day TTL so none age out, while giving the
+         * bounded trace-by-id query many partitions/granules to prune (selected < total).
+         */
+        const val PRUNE_BACKGROUND_DAYS = 12
     }
 
     @BeforeAll
@@ -47,7 +53,12 @@ class ClickHouseSchemaIT {
         runBlocking {
             // Touch the shared container so it is started before the first query.
             ClickHouseTestSupport.container
-            MigrationRunner(client).runMigrations().getOrThrow() shouldBeGreaterThan 0
+            // Converge the schema. The shared container is reused across all storage *IT classes
+            // in one JVM run, so the applied-count is order-dependent (0 when a sibling IT already
+            // created the objects on this container). getOrThrow() still proves migrations apply
+            // cleanly with no Code 62 / Code 549; "all objects exist" is asserted by
+            // [migrationsCreateAllObjects] and idempotency by [reRunningMigrationsIsANoOp].
+            MigrationRunner(client).runMigrations().getOrThrow()
         }
     }
 
@@ -57,7 +68,7 @@ class ClickHouseSchemaIT {
     }
 
     @Test
-    fun migrationsCreateAllObjects() =
+    fun migrationsCreateAllObjects(): Unit =
         runBlocking {
             val tables =
                 client
@@ -76,7 +87,7 @@ class ClickHouseSchemaIT {
         }
 
     @Test
-    fun reRunningMigrationsIsANoOp() =
+    fun reRunningMigrationsIsANoOp(): Unit =
         runBlocking {
             // Schema already applied in @BeforeAll → a second run records nothing new.
             MigrationRunner(client).runMigrations().getOrThrow() shouldBe 0
@@ -92,9 +103,21 @@ class ClickHouseSchemaIT {
         }
 
     @Test
-    fun traceByIdPrunesGranules() =
+    fun traceByIdPrunesGranules(): Unit =
         runBlocking {
             val traceId = "trace-prune-0000000000000000000001"
+
+            // STOR-02 needs the spans table to hold MANY granules so a bounded trace-by-id query
+            // can prune most of them — a single tiny trace lives in one granule, leaving nothing to
+            // prune (selected == total). Seed background spans across PRUNE_BACKGROUND_DAYS distinct
+            // recent days (each its own toDate(Timestamp) partition, all inside the 14-day TTL so
+            // none are dropped); the target trace lives at BASE_TIME. The bounded query then touches
+            // only the target day, pruning the other partitions/granules (selected < total).
+            repeat(PRUNE_BACKGROUND_DAYS) { d ->
+                val bgTrace = "trace-prune-bg-%016d".format(d)
+                val bgBase = SpanFixtures.BASE_TIME.minusSeconds((d + 1).toLong() * 86_400L)
+                insertTrace(bgTrace, spanCount = 4, baseTime = bgBase)
+            }
             insertTrace(traceId, spanCount = 8)
 
             // STOR-02 step 1: read the time range for this trace from the MV.
@@ -118,7 +141,7 @@ class ClickHouseSchemaIT {
                           AND Timestamp BETWEEN {lo:DateTime64(9)} AND {hi:DateTime64(9)}
                         """.trimIndent(),
                         mapOf("tid" to traceId, "lo" to lo, "hi" to hi),
-                    ).joinToString("\n") { it.getString(0) }
+                    ).joinToString("\n") { it.getString("explain") }
 
             // Parse the "Granules: g/G" line — pruning means selected g < total G.
             val granules = Regex("""Granules:\s*(\d+)/(\d+)""").find(plan)
@@ -130,7 +153,7 @@ class ClickHouseSchemaIT {
         }
 
     @Test
-    fun traceIdTsReturnsCorrectRange() =
+    fun traceIdTsReturnsCorrectRange(): Unit =
         runBlocking {
             val traceId = "trace-range-0000000000000000000002"
             val spanCount = 5
@@ -158,8 +181,9 @@ class ClickHouseSchemaIT {
     private suspend fun insertTrace(
         traceId: String,
         spanCount: Int,
+        baseTime: java.time.Instant = SpanFixtures.BASE_TIME,
     ) {
-        SpanFixtures.traceOf(spanCount, traceId = traceId).forEach { (span, ctx) ->
+        SpanFixtures.traceOf(spanCount, traceId = traceId, baseTime = baseTime).forEach { (span, ctx) ->
             client
                 .execute(
                     """

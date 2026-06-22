@@ -66,14 +66,22 @@ class PartCountIT {
                 )
 
             // 30 traces × 1000 spans = 30_000 spans, spread across distinct (TraceId, SpanId) keys
-            // and across many daily partitions (each trace based at a different day).
+            // and across many daily partitions (each trace based at a different recent day).
             val traces = 30
             val spansPerTrace = 1_000
-            val baseDay = Instant.parse("2026-01-01T00:00:00Z")
+            // Anchor on a RECENT day, not a fixed 2026-01-01: the `spans` table has a 14-day TTL
+            // (`TTL toDateTime(Timestamp) + INTERVAL 14 DAY`, 001_spans.sql), so absolute past
+            // timestamps would be dropped on insert and the table would read back empty (the
+            // SC4 assertion would see 0 rows). Spread the traces across the trailing PARTITION_DAYS
+            // days (well inside the TTL window) so rows still land in many distinct
+            // toDate(Timestamp) partitions — keeping the part-count assertion non-trivial.
+            val anchorDay = Instant.now().minusSeconds(1L * 86_400L) // ~yesterday, comfortably in-TTL
             repeat(traces) { t ->
                 val traceId = "partcount-trace-%010d".format(t)
-                // Spread each trace onto its own day so rows land in many toDate(Timestamp) partitions.
-                val baseTime = baseDay.plusSeconds(t.toLong() * 86_400L)
+                // Each trace onto its own recent day (cycled within the TTL window) so rows land in
+                // many toDate(Timestamp) partitions without aging out of the 14-day retention.
+                val dayOffset = (t % PARTITION_DAYS).toLong()
+                val baseTime = anchorDay.minusSeconds(dayOffset * 86_400L)
                 val pairs = SpanFixtures.traceOf(spansPerTrace, traceId = traceId, baseTime = baseTime)
                 for ((span, ctx) in pairs) {
                     writer.send(span, ctx)
@@ -121,5 +129,14 @@ class PartCountIT {
         const val ACTIVE_PARTS_THRESHOLD = 300L
         const val POLL_ATTEMPTS = 100
         const val POLL_DELAY_MS = 200L
+
+        /**
+         * Number of distinct trailing days the 30 traces are spread across. Kept well under the
+         * `spans` 14-day TTL (anchor is ~yesterday, oldest partition ≈ anchor − (PARTITION_DAYS-1)
+         * days) so every row stays inside the retention window yet still occupies many distinct
+         * `toDate(Timestamp)` partitions — the part-count assertion must not collapse to one
+         * partition.
+         */
+        const val PARTITION_DAYS = 12
     }
 }
