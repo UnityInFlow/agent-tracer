@@ -1,0 +1,170 @@
+package io.github.unityinflow.agenttracer.app
+
+import com.clickhouse.client.api.Client
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.unityinflow.agenttracer.ingest.OtlpDecoder
+import io.github.unityinflow.agenttracer.ingest.OtlpGrpcService
+import io.github.unityinflow.agenttracer.ingest.ReceiverConfig
+import io.github.unityinflow.agenttracer.ingest.otlpTraces
+import io.github.unityinflow.agenttracer.storage.AgentSpanRowMapper
+import io.github.unityinflow.agenttracer.storage.ClickHouseClientFactory
+import io.github.unityinflow.agenttracer.storage.ClickHouseConfig
+import io.github.unityinflow.agenttracer.storage.ClickHouseSpanRepository
+import io.github.unityinflow.agenttracer.storage.migrations.MigrationRunner
+import io.github.unityinflow.agenttracer.storage.pipeline.SpanWriter
+import io.grpc.Server
+import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder
+import io.ktor.server.application.Application
+import io.ktor.server.engine.EmbeddedServer
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.netty.Netty
+import io.ktor.server.netty.NettyApplicationEngine
+import io.ktor.server.routing.routing
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.runBlocking
+import java.util.concurrent.TimeUnit
+
+private val logger = KotlinLogging.logger {}
+
+/**
+ * The application bootstrap (D-05 manual DI): hosts BOTH OTLP receivers (:4318 Ktor/HTTP +
+ * :4317 standalone `io.grpc.Server`), the single Phase-2 [SpanWriter] batching pipeline, and the
+ * ClickHouse client in ONE JVM, tied together with the strict D-04 lifecycle:
+ *
+ *  1. **migrate → serve**: [MigrationRunner.runMigrations] runs to completion via `.getOrThrow()`
+ *     BEFORE any port opens, so a Code-62/549 schema fault surfaces at boot (fail fast, Pitfall 7),
+ *     never at first request time.
+ *  2. **serve**: both transports share the SAME [OtlpDecoder], [SpanWriter], and
+ *     [SpanWriter.backpressure] signal — saturation is global and consistent (T-03-12). The gRPC
+ *     server sets `.maxInboundMessageSize(grpcMaxInboundBytes)` so prompt-heavy spans over gRPC's
+ *     4 MiB default are accepted (SC2).
+ *  3. **drain**: the shutdown hook closes the PORTS FIRST (so no new span is accepted), THEN calls
+ *     [SpanWriter.drainAndClose] to flush the in-flight buffer, THEN closes the [Client] — no span
+ *     lost on `SIGTERM` / `docker compose down` (D-04 drain order, T-03-14).
+ *
+ * Manual DI keeps wiring explicit and testable: [bootReceivers] returns a [RunningReceivers] handle
+ * the IT exercises directly (boot/drain without spawning a process); [shutdown] runs the drain
+ * sequence. No Gradle `application` plugin here — packaging is a Phase-4 concern.
+ *
+ * `val`-only, no `!!`, no `Thread.sleep` (coroutine `awaitTermination`/`join` everywhere).
+ */
+private const val GRPC_SHUTDOWN_TIMEOUT_SECONDS = 10L
+private const val KTOR_GRACE_MILLIS = 1_000L
+private const val KTOR_SHUTDOWN_TIMEOUT_MILLIS = 5_000L
+
+/**
+ * A booted set of receivers plus the resources whose lifecycle the bootstrap owns. The IT and
+ * [main] both shut down through [shutdown]; the handle exposes the live [ports]/[writer]/[client]
+ * so a test can drive spans through the started transports and then assert post-drain persistence.
+ *
+ * @property client the open ClickHouse client (closed last in [shutdown]).
+ * @property writer the single batching pipeline both transports feed (drained before the client closes).
+ * @property repository the read seam tests use to assert spans landed (`getTraceById`).
+ * @property grpc the started standalone gRPC server (:grpcPort).
+ * @property ktor the started Ktor/Netty HTTP server (:httpPort).
+ * @property scope the lifecycle [CoroutineScope] the gRPC callback→suspend bridge launches on.
+ * @property config the resolved receiver config (the bound ports live here).
+ */
+class RunningReceivers(
+    val client: Client,
+    val writer: SpanWriter,
+    val repository: ClickHouseSpanRepository,
+    val grpc: Server,
+    val ktor: EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration>,
+    val scope: CoroutineScope,
+    val config: ReceiverConfig,
+)
+
+/**
+ * D-04 step 1–3 (migrate → serve), without the blocking await. Runs migrations to completion BEFORE
+ * opening any port (fail fast via `.getOrThrow()`), then starts the single [SpanWriter] pipeline and
+ * BOTH transports against it, returning a live [RunningReceivers] handle.
+ *
+ * The [ClickHouseClientFactory] sets the default database on the client, so the repository takes the
+ * 1-arg ctor (PATTERNS correction — do NOT pass a database to the repo).
+ */
+suspend fun bootReceivers(
+    chConfig: ClickHouseConfig,
+    receiverConfig: ReceiverConfig,
+    client: Client = ClickHouseClientFactory.create(chConfig),
+): RunningReceivers {
+    // D-04 step 2 (Pitfall 7): migrate to completion BEFORE any port opens — fail fast at boot.
+    MigrationRunner(client).runMigrations().getOrThrow()
+
+    val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    val repository = ClickHouseSpanRepository(client) // 1-arg ctor (factory set the default database).
+    val writer = SpanWriter(repository, AgentSpanRowMapper(), scope)
+    val decoder = OtlpDecoder()
+
+    // Standalone io.grpc.Server (:4317) — Ktor cannot host gRPC. The raised inbound cap is SC2's enabler.
+    val grpc =
+        NettyServerBuilder
+            .forPort(receiverConfig.grpcPort)
+            .maxInboundMessageSize(receiverConfig.grpcMaxInboundBytes)
+            .addService(OtlpGrpcService(decoder, writer, writer.backpressure, scope))
+            .build()
+            .start()
+
+    // Ktor/Netty (:4318) hosts the OTLP/HTTP route on the SAME decoder/writer/backpressure signal.
+    val ktor =
+        embeddedServer(Netty, port = receiverConfig.httpPort) {
+            installOtlp(decoder, writer, receiverConfig)
+        }.start(wait = false)
+
+    logger.info { "Receivers up: HTTP :${receiverConfig.httpPort}, gRPC :${receiverConfig.grpcPort}" }
+    return RunningReceivers(client, writer, repository, grpc, ktor, scope, receiverConfig)
+}
+
+/** Installs the OTLP/HTTP route on this Ktor [Application], sharing the pipeline's backpressure signal. */
+fun Application.installOtlp(
+    decoder: OtlpDecoder,
+    writer: SpanWriter,
+    config: ReceiverConfig,
+) {
+    routing {
+        otlpTraces(decoder, writer, writer.backpressure, config)
+    }
+}
+
+/**
+ * D-04 drain order (Pitfall 7, T-03-14): close BOTH ports first (so no new span is accepted), THEN
+ * flush the in-flight buffer via [SpanWriter.drainAndClose], THEN close the client, THEN cancel the
+ * lifecycle scope. Coroutine `awaitTermination`/`join` only — never `Thread.sleep`.
+ */
+suspend fun RunningReceivers.shutdown() {
+    // 1. Ports first — refuse new spans before draining.
+    grpc.shutdown().awaitTermination(GRPC_SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+    ktor.stop(gracePeriodMillis = KTOR_GRACE_MILLIS, timeoutMillis = KTOR_SHUTDOWN_TIMEOUT_MILLIS)
+    // 2. Drain the in-flight buffer — no span lost on shutdown.
+    writer.drainAndClose()
+    // 3. Close the client, then cancel the lifecycle scope.
+    client.close()
+    scope.cancel()
+    logger.info { "Receivers drained and shut down cleanly" }
+}
+
+/**
+ * `fun main()` — the migrate→serve→drain bootstrap. Wraps the lifecycle in [runBlocking] because the
+ * migrations and drain are `suspend`. Registers the shutdown hook (ports → drain → client) and then
+ * blocks on `grpc.awaitTermination()` to keep the JVM alive until `SIGTERM`.
+ */
+fun main(): Unit =
+    runBlocking {
+        val receivers =
+            bootReceivers(
+                chConfig = ClickHouseConfig.fromEnv(),
+                receiverConfig = ReceiverConfig.fromEnv(),
+            )
+
+        Runtime.getRuntime().addShutdownHook(
+            Thread {
+                runBlocking { receivers.shutdown() }
+            },
+        )
+
+        // Keep main alive until the gRPC server terminates (driven by the shutdown hook on SIGTERM).
+        receivers.grpc.awaitTermination()
+    }
