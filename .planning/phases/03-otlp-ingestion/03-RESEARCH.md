@@ -662,21 +662,24 @@ fun grpcReceiverAcceptsPromptHeavySpanOverDefaultLimit(): Unit = runBlocking {
 | A3 | gRPC's protobuf marshaller rejects an undecodable `ExportTraceServiceRequest` before `export` is called (so no manual decode-failure branch is needed in the gRPC service). | Pattern 3 | Standard grpc-java behavior; if a malformed body somehow reaches `export` it would be an internal error, already caught by the try/catch → `INTERNAL`. Low risk. |
 | A4 | A 32 MiB gRPC `maxInboundMessageSize` comfortably covers SC2's ">4 MB" prompt-heavy spans. | Pattern 3 / D-discretion | If real agent spans exceed 32 MiB the limit must rise; it is env-configurable, so trivially adjustable. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Exact Phase-2 id hex format (HIGH priority for planner).**
    - What we know: D-07 mandates hex-encoded ids matching the Phase-2 column format; the schema uses `TraceId`/`SpanId`/`ParentSpanId` String columns.
    - What's unclear: casing and empty-parent representation are not visible from the seam signatures alone.
    - Recommendation: planner's first ingest task reads `SpanFixtures.kt` + `ClickHouseSpanRepository.getTraceById` and pins the exact format; add a round-trip IT (Pitfall 1) so any mismatch fails loudly.
+   - RESOLVED in 03-01 Task 3: format pinned byte-for-byte against `storage/SpanFixtures.DEFAULT_TRACE_ID` (`0af7651916cd43dd8448eb211c80319c`, lowercase, no `0x`, empty-parent = `""`) with a round-trip assertion; closed end-to-end by 03-04 Task 2's `getTraceById(knownHexId)` retrieval.
 
 2. **gRPC saturation status: RESOURCE_EXHAUSTED (D-01) vs spec's UNAVAILABLE.**
    - What we know: D-01 locks `RESOURCE_EXHAUSTED`; both are retryable in the OTel SDK/Collector.
    - What's unclear: whether a future conformance bar demands literal spec wording.
    - Recommendation: follow D-01 (locked); document the deviation (Pitfall 6). One-line switch if ever required.
+   - RESOLVED by D-01 -> `RESOURCE_EXHAUSTED`, implemented in 03-03 Task 1 (deviation from the spec's UNAVAILABLE documented in KDoc; both retryable).
 
 3. **HTTP body-size guard value.**
    - What we know: gRPC is capped at 32 MiB; HTTP currently bounded only by heap.
    - Recommendation: add a configurable HTTP max-body guard mirroring the gRPC cap (security symmetry). Small task; sensible default 32 MiB.
+   - RESOLVED to a 32 MiB default HTTP body guard (`httpMaxBodyBytes`), implemented in 03-02 Task 1, symmetric with the gRPC 32 MiB `maxInboundMessageSize`.
 
 ## Environment Availability
 
