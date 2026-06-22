@@ -94,7 +94,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Wave 2** *(blocked on Wave 1; the two transports own disjoint files → run in parallel)*
 
 - [x] 03-02-PLAN.md — OTLP/HTTP receiver: Ktor `Route.otlpTraces` on :4318 (200 full/partial, 400 undecodable, 429+Retry-After fail-fast, 413 body-size guard) + OtlpHttpRoutesTest via ktor-server-test-host, 5 tests 0 skipped, fail-fast proven behaviorally (INGEST-01, INGEST-03)
-- [ ] 03-03-PLAN.md — OTLP/gRPC receiver: OtlpGrpcService extends TraceServiceImplBase on :4317 with the StreamObserver→suspend coroutine bridge + RESOURCE_EXHAUSTED saturation + OtlpGrpcServiceTest over an in-process channel (INGEST-02, INGEST-03)
+- [x] 03-03-PLAN.md — OTLP/gRPC receiver: OtlpGrpcService extends TraceServiceImplBase on :4317 with the StreamObserver→suspend coroutine bridge + RESOURCE_EXHAUSTED saturation + OtlpGrpcServiceTest over an in-process channel (INGEST-02, INGEST-03)
 
 **Wave 3** *(blocked on Wave 2)*
 
@@ -140,6 +140,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Attribute Convention & Domain Model | 4/4 | Complete    | 2026-06-14 |
 | 2. ClickHouse Storage Layer | 5/5 | Complete    | 2026-06-22 |
-| 3. OTLP Ingestion | 2/4 | In Progress|  |
+| 3. OTLP Ingestion | 3/4 | In Progress|  |
 | 4. Query API, Demo Emitter & Compose Stack | 0/TBD | Not started | - |
 | 5. Frontend Visualization | 0/TBD | Not started | - |
