@@ -85,7 +85,20 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Both receivers return spec-conformant responses: `partial_success` on partial rejection, correct error/backpressure status codes when the pipeline is saturated
   4. Spans from both transports flow through the single Phase 2 batching pipeline — there is no per-request insert path
 
-**Plans**: TBD
+**Plans**: 4 plans in 3 waves
+
+**Wave 1**
+
+- [ ] 03-01-PLAN.md — Phase-3 deps (Ktor/gRPC/otel-sdk) + the transport-agnostic core: OtlpDecoder (D-06) + DecodeResult (D-02) + OtlpResponses (partial_success builder) + ReceiverConfig (env ports/limits); OtlpDecoderTest pins the D-07 hex-id format byte-for-byte with a round-trip assertion (risk-reducer, Pitfall 1) (INGEST-01/02/03)
+
+**Wave 2** *(blocked on Wave 1; the two transports own disjoint files → run in parallel)*
+
+- [ ] 03-02-PLAN.md — OTLP/HTTP receiver: Ktor `Route.otlpTraces` on :4318 (200 full/partial, 400 undecodable, 429+Retry-After fail-fast, 413 body-size guard) + OtlpHttpRoutesTest via ktor-server-test-host (INGEST-01, INGEST-03)
+- [ ] 03-03-PLAN.md — OTLP/gRPC receiver: OtlpGrpcService extends TraceServiceImplBase on :4317 with the StreamObserver→suspend coroutine bridge + RESOURCE_EXHAUSTED saturation + OtlpGrpcServiceTest over an in-process channel (INGEST-02, INGEST-03)
+
+**Wave 3** *(blocked on Wave 2)*
+
+- [ ] 03-04-PLAN.md — App bootstrap: TracerApplication fun main() (migrate→serve→drain, both servers, D-04/D-05) + real-exporter Testcontainers ITs: OtlpHttpReceiverIT (SC1, closes the D-07 round-trip), OtlpGrpcReceiverIT (SC2, >4 MB span), TracerApplicationIT (boot ordering + drain-no-loss) (INGEST-01/02/03)
 
 ### Phase 4: Query API, Demo Emitter & Compose Stack
 
@@ -127,6 +140,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Attribute Convention & Domain Model | 4/4 | Complete    | 2026-06-14 |
 | 2. ClickHouse Storage Layer | 5/5 | Complete    | 2026-06-22 |
-| 3. OTLP Ingestion | 0/TBD | Not started | - |
+| 3. OTLP Ingestion | 0/4 | Not started | - |
 | 4. Query API, Demo Emitter & Compose Stack | 0/TBD | Not started | - |
 | 5. Frontend Visualization | 0/TBD | Not started | - |
