@@ -89,7 +89,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Wave 1**
 
-- [ ] 03-01-PLAN.md — Phase-3 deps (Ktor/gRPC/otel-sdk) + the transport-agnostic core: OtlpDecoder (D-06) + DecodeResult (D-02) + OtlpResponses (partial_success builder) + ReceiverConfig (env ports/limits); OtlpDecoderTest pins the D-07 hex-id format byte-for-byte with a round-trip assertion (risk-reducer, Pitfall 1) (INGEST-01/02/03)
+- [x] 03-01-PLAN.md — Phase-3 deps (Ktor/gRPC/otel-sdk) + the transport-agnostic core: OtlpDecoder (D-06) + DecodeResult (D-02) + OtlpResponses (partial_success builder) + ReceiverConfig (env ports/limits); OtlpDecoderTest pins the D-07 hex-id format byte-for-byte with a round-trip assertion (risk-reducer, Pitfall 1) (INGEST-01/02/03)
 
 **Wave 2** *(blocked on Wave 1; the two transports own disjoint files → run in parallel)*
 
@@ -140,6 +140,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Attribute Convention & Domain Model | 4/4 | Complete    | 2026-06-14 |
 | 2. ClickHouse Storage Layer | 5/5 | Complete    | 2026-06-22 |
-| 3. OTLP Ingestion | 0/4 | Not started | - |
+| 3. OTLP Ingestion | 1/4 | In Progress|  |
 | 4. Query API, Demo Emitter & Compose Stack | 0/TBD | Not started | - |
 | 5. Frontend Visualization | 0/TBD | Not started | - |

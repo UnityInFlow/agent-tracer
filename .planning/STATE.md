@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 3 context gathered
-last_updated: "2026-06-22T18:56:04.393Z"
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-06-22T19:06:21.549Z"
 last_activity: 2026-06-22 -- Phase 03 execution started
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 13
-  completed_plans: 9
+  completed_plans: 10
   percent: 40
 ---
 
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-06-12)
 ## Current Position
 
 Phase: 03 (otlp-ingestion) — EXECUTING
-Plan: 1 of 4
-Status: Executing Phase 03
+Plan: 2 of 4
+Status: Ready to execute
 Last activity: 2026-06-22 -- Phase 03 execution started
 
 Progress: [████░░░░░░] 40%
@@ -61,6 +61,7 @@ Progress: [████░░░░░░] 40%
 | Phase 02 P03 | ~22 min | 3 tasks | 7 files |
 | Phase 02 P04 | ~10 min | 3 tasks | 8 files |
 | Phase 02 P05 | ~25 min | 2 tasks | 7 files |
+| Phase 03 P01 | ~6 min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -93,6 +94,9 @@ Recent decisions affecting current work:
 - [02-04]: PartCountIT (SC4) committed but unobserved-passing locally — identical Testcontainers HTTP-wait read-timeout under Colima/QEMU (initializationError, class never instantiates); container proven healthy via manual docker run + curl /ping → HTTP 200 in ~5ms. SpanWriterTest (pure JVM) exercises the same send→flush→writeBatch path and passes. Runs green on native-Docker CI.
 - [02-05]: Gap closure proved the schema applies against REAL ClickHouse on Docker Desktop (the Colima/QEMU context masked every storage bug all phase). Root blocker: splitter split on `;` before stripping `--` comments (Code 62). Secondary defects fixed in the same green commit: Code 549 (SimpleAggregateFunction columns illegal in key/TTL/PARTITION → added plain DateTime key columns), JUnit silently skipping expression-body @Test methods until `: Unit` is declared (this masked verification), getString 1-based fix, PartCountIT TTL-window fixture re-anchor. Full suite 65/65 green, 0 skipped.
 - [02-05 / D-07 Option A]: agent_runs rollup test asserts genuine Phase-2 math over 3 distinct spans; duplicate/late/out-of-order span dedup deferred to Phase 4. No span dedup implemented; spans/agent_runs engine choice unchanged (Option B rejected).
+- [Phase ?]: [03-01]: D-07 hex id format pinned byte-for-byte to storage/SpanFixtures (lowercase, no 0x, empty parent="") via OtlpDecoder.toHex; proven by round-trip unit test
+- [Phase ?]: [03-01]: One transport-agnostic OtlpDecoder (D-06) is the only OTLP tree walker; D-03 store-all routes every span (agent+non-agent) through AgentSpanExtractor, none dropped, no separate table
+- [Phase ?]: [03-01]: protobuf-java 4.35.1 added as a DIRECT implementation dep so it wins over opentelemetry-proto's transitive 4.34.0 (Pitfall 3)
 
 ### Pending Todos
 
@@ -116,6 +120,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-22T17:54:29.795Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/phases/03-otlp-ingestion/03-CONTEXT.md
+Last session: 2026-06-22T19:06:21.542Z
+Stopped at: Completed 03-01-PLAN.md
+Resume file: None
