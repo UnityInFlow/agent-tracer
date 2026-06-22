@@ -52,7 +52,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A span's input/output payloads can be stored and retrieved individually, sufficient to power replay and a span detail panel
   4. Writes flow through a batching pipeline (flush by count/time) — sustained insert load keeps ClickHouse part counts bounded, proven against a real ClickHouse instance via Testcontainers
 
-**Plans**: TBD
+**Plans**: 4 plans in 4 waves
+
+- [ ] 02-01-PLAN.md — Wave 0: storage + Testcontainers dependencies (client-v2, coroutines, testcontainers, kotlin-logging, logback) + shared ClickHouse 26.3 container fixture + deterministic SpanFixtures
+- [ ] 02-02-PLAN.md — Four idempotent DDL migrations (spans / payloads / trace_id_ts MV / agent_runs AggregatingMergeTree MV) + env-var config + client-v2 factory + startup MigrationRunner; ClickHouseSchemaIT proves apply/idempotency/EXPLAIN pruning (STOR-01, STOR-02)
+- [ ] 02-03-PLAN.md — Row POJOs + SpanRepository seam + ClickHouseSpanRepository (RowBinary insert, two-step trace-by-id, agent_runs listRuns, payload point-lookup, all parameterized); SpanRepositoryIT proves round-trips + rollup + payloads (STOR-01, STOR-02, STOR-03)
+- [ ] 02-04-PLAN.md — AgentSpanRowMapper (256 KB cap + truncation) + SpanWriter bounded-Channel batching pipeline with retry-then-backpressure + BackpressureSignal; SpanWriterTest + PartCountIT prove flush/backpressure/no-drop + bounded parts under load (STOR-01, STOR-03, SC4)
 
 ### Phase 3: OTLP Ingestion
 
@@ -107,7 +112,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Attribute Convention & Domain Model | 4/4 | Complete    | 2026-06-14 |
-| 2. ClickHouse Storage Layer | 0/TBD | Not started | - |
+| 2. ClickHouse Storage Layer | 0/4 | Not started | - |
 | 3. OTLP Ingestion | 0/TBD | Not started | - |
 | 4. Query API, Demo Emitter & Compose Stack | 0/TBD | Not started | - |
 | 5. Frontend Visualization | 0/TBD | Not started | - |
