@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-04-PLAN.md (Phase 02 complete)
-last_updated: "2026-06-22T09:31:33.000Z"
-last_activity: 2026-06-22 -- Completed Phase 02 Plan 04 (batching write pipeline: SpanWriter + AgentSpanRowMapper); Phase 02 complete
+stopped_at: Completed 02-05-PLAN.md (Phase 02 gap closure — UAT blocker closed)
+last_updated: "2026-06-22T16:40:00Z"
+last_activity: 2026-06-22 -- Phase 02 gap-closure plan 02-05 complete
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 8
-  completed_plans: 8
+  total_plans: 9
+  completed_plans: 9
   percent: 40
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-06-12)
 
 ## Current Position
 
-Phase: 02 (clickhouse-storage-layer) — COMPLETE
-Plan: 4 of 4 (all complete)
-Status: Phase 02 complete — ready to plan Phase 03 (OTLP Ingestion)
-Last activity: 2026-06-22 -- Completed Phase 02 Plan 04 (batching write pipeline); Phase 02 complete
+Phase: 02 (clickhouse-storage-layer) — COMPLETE (UAT blocker closed via gap-closure plan 02-05)
+Plan: 5 of 5
+Status: Phase 02 complete; next run /gsd-discuss-phase 3 (OTLP Ingestion)
+Last activity: 2026-06-22 -- Phase 02 gap-closure plan 02-05 complete
 
 Progress: [████░░░░░░] 40%
 
@@ -59,6 +59,7 @@ Progress: [████░░░░░░] 40%
 | Phase 02 P02 | 35min | 3 tasks | 1 files |
 | Phase 02 P03 | ~22 min | 3 tasks | 7 files |
 | Phase 02 P04 | ~10 min | 3 tasks | 8 files |
+| Phase 02 P05 | ~25 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -89,6 +90,8 @@ Recent decisions affecting current work:
 - [02-04]: 256 KB-per-field payload cap measured in encoded UTF-8 BYTES, truncated on a char boundary (CharsetDecoder IGNORE → no mid-codepoint split); the larger of (emitter-reported, locally-measured) original size is preserved (D-13, no double-truncate).
 - [02-04]: Added kotlinx-coroutines-test (testImplementation, same group/version as coroutines-core 1.11.0) for runTest/virtual-time flush-by-time assertions — first-party JetBrains companion, not a slopcheck-gated install.
 - [02-04]: PartCountIT (SC4) committed but unobserved-passing locally — identical Testcontainers HTTP-wait read-timeout under Colima/QEMU (initializationError, class never instantiates); container proven healthy via manual docker run + curl /ping → HTTP 200 in ~5ms. SpanWriterTest (pure JVM) exercises the same send→flush→writeBatch path and passes. Runs green on native-Docker CI.
+- [02-05]: Gap closure proved the schema applies against REAL ClickHouse on Docker Desktop (the Colima/QEMU context masked every storage bug all phase). Root blocker: splitter split on `;` before stripping `--` comments (Code 62). Secondary defects fixed in the same green commit: Code 549 (SimpleAggregateFunction columns illegal in key/TTL/PARTITION → added plain DateTime key columns), JUnit silently skipping expression-body @Test methods until `: Unit` is declared (this masked verification), getString 1-based fix, PartCountIT TTL-window fixture re-anchor. Full suite 65/65 green, 0 skipped.
+- [02-05 / D-07 Option A]: agent_runs rollup test asserts genuine Phase-2 math over 3 distinct spans; duplicate/late/out-of-order span dedup deferred to Phase 4. No span dedup implemented; spans/agent_runs engine choice unchanged (Option B rejected).
 
 ### Pending Todos
 
@@ -100,6 +103,7 @@ None yet.
 - [Phase 4]: Replay/assembly design (late/orphaned spans, step ordering, clock skew) flagged for deeper research during phase planning
 - [Phase 5]: elkjs compound layout in a Web Worker is MEDIUM-confidence — validate with an early spike
 - [General]: Saturation timeline is emitter-gated — zero value until something emits `context_saturation_pct`; demo emitter (Phase 4) is the mitigation
+- [02-05] RESOLVED (2026-06-22): Rollup dedup decision resolved via Option A — agentRunsRollupIsCorrect now asserts honest Phase-2 rollup of 3 distinct spans (no duplicate re-insert); duplicate/late/out-of-order dedup stays deferred to Phase 4 per D-07. Splitter Code 62 + schema Code 549 + PartCountIT TTL + JUnit silently-skipped-expression-body (`: Unit`) + getString 1-based all fixed. Full backend suite 65/65 green (0 skipped) against real ClickHouse on Docker Desktop. UAT blocker closed.
 
 ## Deferred Items
 
@@ -111,6 +115,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-22T09:31:33.000Z
-Stopped at: Completed 02-04-PLAN.md (Phase 02 complete)
+Last session: 2026-06-22T16:40:00Z
+Stopped at: Completed 02-05-PLAN.md (Phase 02 gap closure — UAT blocker closed; 65/65 green on real ClickHouse)
 Resume file: None — Phase 02 done; next run /gsd-discuss-phase 3 (OTLP Ingestion)

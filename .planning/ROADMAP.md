@@ -14,7 +14,7 @@ agent-tracer is built convention-first and backend-first. Phase 1 publishes the 
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Attribute Convention & Domain Model** - Publish the agent span attribute contract and build the gen_ai/unityinflow extractor (1 UAT gap → gap-closure plan 01-04 pending) (completed 2026-06-14)
-- [x] **Phase 2: ClickHouse Storage Layer** - Schema with typed agent columns, materialized views, payload storage, and the batching write pipeline (completed 2026-06-22)
+- [x] **Phase 2: ClickHouse Storage Layer** - Schema with typed agent columns, materialized views, payload storage, and the batching write pipeline (UAT blocker closed via gap-closure plan 02-05; storage ITs observed green on real ClickHouse) (completed 2026-06-22)
 - [ ] **Phase 3: OTLP Ingestion** - Spec-conformant OTLP/HTTP and OTLP/gRPC receivers feeding the single batching pipeline
 - [ ] **Phase 4: Query API, Demo Emitter & Compose Stack** - Backend milestone: DAG/filter/timeline API, synthetic trace generator, and `docker compose up` end-to-end
 - [ ] **Phase 5: Frontend Visualization** - Interactive DAG with cost overlay, saturation timeline, nested subagents, replay mode, and filters
@@ -71,7 +71,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Wave 5** *(gap closure — UAT blocker)*
 
-- [ ] 02-05-PLAN.md — Gap closure: comment-safe SQL statement splitting in MigrationRunner (strip `--` comments before `;` split — a semicolon in a header comment was leaking garbage into CREATE TABLE → Code 62 SYNTAX_ERROR, schema never applied) + Docker-free regression test + observe all three storage ITs GREEN against real ClickHouse on Docker Desktop (STOR-01/02/03)
+- [x] 02-05-PLAN.md — Gap closure: comment-safe SQL statement splitting in MigrationRunner (strip `--` comments before `;` split — a semicolon in a header comment was leaking garbage into CREATE TABLE → Code 62 SYNTAX_ERROR, schema never applied) + Docker-free regression test + observed all three storage ITs GREEN against real ClickHouse on Docker Desktop. Also fixed Code 549 (SimpleAggregateFunction columns illegal in key/TTL → plain DateTime key columns), a JUnit silently-skipped-expression-body bug masking verification, and re-anchored PartCountIT TTL fixtures; D-07 dedup deferred to Phase 4 (Option A). Full backend suite 65/65 green, 0 skipped (STOR-01/02/03)
 
 ### Phase 3: OTLP Ingestion
 
@@ -126,7 +126,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Attribute Convention & Domain Model | 4/4 | Complete    | 2026-06-14 |
-| 2. ClickHouse Storage Layer | 4/5 | Gap closure (UAT blocker) | 2026-06-22 |
+| 2. ClickHouse Storage Layer | 5/5 | Complete | 2026-06-22 |
 | 3. OTLP Ingestion | 0/TBD | Not started | - |
 | 4. Query API, Demo Emitter & Compose Stack | 0/TBD | Not started | - |
 | 5. Frontend Visualization | 0/TBD | Not started | - |
