@@ -52,17 +52,34 @@ data class ReceiverConfig(
         const val ENV_RETRY_AFTER_SECONDS = "AGENT_TRACER_RETRY_AFTER_SECONDS"
 
         /**
-         * Builds a [ReceiverConfig], overriding each knob from its `AGENT_TRACER_*` env var via
-         * `toIntOrNull` (an unparseable value falls back to the default), mirroring
-         * `ClickHouseConfig.fromEnv`. The [init] block validates the result.
+         * Builds a [ReceiverConfig], overriding each knob from its `AGENT_TRACER_*` env var. An ABSENT
+         * var uses the default; a var that is PRESENT-but-unparseable FAILS FAST with a clear message
+         * naming the var (WR-04) — it is NOT silently swallowed into the default, since a port or
+         * size-cap typo must surface at boot, not bind an unexpected value (the class KDoc's
+         * "misconfiguration surfaces at boot" promise). The [init] block then validates the ranges.
          */
         fun fromEnv(env: (String) -> String? = System::getenv): ReceiverConfig =
             ReceiverConfig(
-                httpPort = env(ENV_HTTP_PORT)?.toIntOrNull() ?: DEFAULT_HTTP_PORT,
-                grpcPort = env(ENV_GRPC_PORT)?.toIntOrNull() ?: DEFAULT_GRPC_PORT,
-                grpcMaxInboundBytes = env(ENV_GRPC_MAX_INBOUND_BYTES)?.toIntOrNull() ?: DEFAULT_GRPC_MAX_INBOUND_BYTES,
-                httpMaxBodyBytes = env(ENV_HTTP_MAX_BODY_BYTES)?.toIntOrNull() ?: DEFAULT_HTTP_MAX_BODY_BYTES,
-                retryAfterSeconds = env(ENV_RETRY_AFTER_SECONDS)?.toIntOrNull() ?: DEFAULT_RETRY_AFTER_SECONDS,
+                httpPort = intEnv(env, ENV_HTTP_PORT, DEFAULT_HTTP_PORT),
+                grpcPort = intEnv(env, ENV_GRPC_PORT, DEFAULT_GRPC_PORT),
+                grpcMaxInboundBytes = intEnv(env, ENV_GRPC_MAX_INBOUND_BYTES, DEFAULT_GRPC_MAX_INBOUND_BYTES),
+                httpMaxBodyBytes = intEnv(env, ENV_HTTP_MAX_BODY_BYTES, DEFAULT_HTTP_MAX_BODY_BYTES),
+                retryAfterSeconds = intEnv(env, ENV_RETRY_AFTER_SECONDS, DEFAULT_RETRY_AFTER_SECONDS),
             )
+
+        /**
+         * Resolves one integer knob: absent → [default]; present-and-parseable → its value;
+         * present-but-unparseable → fail fast with a message naming [key] (WR-04). Distinguishing
+         * "unset" from "set but malformed" is the whole point — `toIntOrNull() ?: default` collapses
+         * the two and hides a typo behind a silent default.
+         */
+        private fun intEnv(
+            env: (String) -> String?,
+            key: String,
+            default: Int,
+        ): Int {
+            val raw = env(key) ?: return default
+            return raw.toIntOrNull() ?: error("$key must be an integer, got '$raw'")
+        }
     }
 }
