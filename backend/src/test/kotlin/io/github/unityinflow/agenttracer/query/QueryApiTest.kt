@@ -8,6 +8,7 @@ import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.application.install
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
@@ -39,7 +40,7 @@ class QueryApiTest {
     fun listRunsReturns200WithJsonBody() {
         testApplication {
             application {
-                install(ContentNegotiation) { json() }
+                this@application.install(ContentNegotiation) { json() }
                 routing { queryApi(fakeRepo()) }
             }
             val response = client.get("/api/runs")
@@ -63,7 +64,7 @@ class QueryApiTest {
             }
         testApplication {
             application {
-                install(ContentNegotiation) { json() }
+                this@application.install(ContentNegotiation) { json() }
                 routing { queryApi(repo) }
             }
             val response = client.get("/api/runs/known-run-000000000000000001/dag")
@@ -79,7 +80,7 @@ class QueryApiTest {
             }
         testApplication {
             application {
-                install(ContentNegotiation) { json() }
+                this@application.install(ContentNegotiation) { json() }
                 routing { queryApi(repo) }
             }
             val response = client.get("/api/runs/no-such-run-00000000000000001/dag")
@@ -91,7 +92,7 @@ class QueryApiTest {
     fun malformedCostFilterReturns400() {
         testApplication {
             application {
-                install(ContentNegotiation) { json() }
+                this@application.install(ContentNegotiation) { json() }
                 routing { queryApi(fakeRepo()) }
             }
             val response = client.get("/api/runs?costMin=NaN")
