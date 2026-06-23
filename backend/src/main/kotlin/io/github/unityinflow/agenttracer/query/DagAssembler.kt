@@ -1,8 +1,5 @@
 package io.github.unityinflow.agenttracer.query
 
-import io.github.unityinflow.agenttracer.query.dto.DagEdge
-import io.github.unityinflow.agenttracer.query.dto.DagNode
-import io.github.unityinflow.agenttracer.query.dto.DagResponse
 import io.github.unityinflow.agenttracer.storage.SpanRow
 
 /**
@@ -30,7 +27,6 @@ class DagAssembler {
         val byId: Map<String, SpanRow> = spans.associateBy { it.spanId }
 
         // Resolve each span's effective parent id (null = true root, SYNTHETIC_ROOT_ID = orphan).
-        var hasOrphan = false
         val resolvedParent: Map<String, String?> =
             spans.associate { span ->
                 val parent = span.parentSpanId
@@ -38,13 +34,11 @@ class DagAssembler {
                     when {
                         parent.isEmpty() -> null
                         parent in byId -> parent
-                        else -> {
-                            hasOrphan = true
-                            SYNTHETIC_ROOT_ID
-                        }
+                        else -> SYNTHETIC_ROOT_ID
                     }
                 span.spanId to resolved
             }
+        val hasOrphan: Boolean = resolvedParent.values.any { it == SYNTHETIC_ROOT_ID }
 
         // Edges: one parent → child edge per node with a non-null parent (incl. synthetic-root edges).
         val edges: List<DagEdge> =
@@ -126,8 +120,7 @@ class DagAssembler {
             memo[id]?.let { return it }
             if (id in onPath) return ownCost[id] ?: 0.0 // cycle guard: count own cost once, stop.
             onPath.add(id)
-            var total = ownCost[id] ?: 0.0
-            children[id]?.forEach { child -> total += subtree(child) }
+            val total = (ownCost[id] ?: 0.0) + (children[id]?.sumOf { child -> subtree(child) } ?: 0.0)
             onPath.remove(id)
             memo[id] = total
             return total

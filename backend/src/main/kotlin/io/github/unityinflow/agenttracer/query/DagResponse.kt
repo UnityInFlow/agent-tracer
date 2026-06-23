@@ -1,4 +1,4 @@
-package io.github.unityinflow.agenttracer.query.dto
+package io.github.unityinflow.agenttracer.query
 
 import kotlinx.serialization.Serializable
 
