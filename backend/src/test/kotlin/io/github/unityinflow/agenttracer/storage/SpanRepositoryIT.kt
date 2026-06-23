@@ -144,7 +144,11 @@ class SpanRepositoryIT {
             repo.writeBatch(rows, emptyList()).getOrThrow()
             waitForRun(traceId)
 
-            val run = repo.listRuns(RunFilter(agentName = "planner-agent")).getOrThrow().single { it.traceId == traceId }
+            val run =
+                repo
+                    .listRuns(RunFilter(agentName = "planner-agent"), SpanRepository.DEFAULT_LIMIT, 0)
+                    .getOrThrow()
+                    .single { it.traceId == traceId }
 
             // full() fixtures: inputTokens=1200, outputTokens=350, costUsd=0.0425, saturation=62.5 each.
             // traceOf keeps these uniform across the 3 spans; agent_runs sums tokens/cost and maxes saturation.
@@ -187,7 +191,7 @@ class SpanRepositoryIT {
                     dateFrom = SpanFixtures.BASE_TIME.minusSeconds(60),
                     dateTo = SpanFixtures.BASE_TIME.plusSeconds(60),
                 )
-            val runs = repo.listRuns(filter).getOrThrow()
+            val runs = repo.listRuns(filter, SpanRepository.DEFAULT_LIMIT, 0).getOrThrow()
             runs.map { it.traceId } shouldContainExactlyInAnyOrder listOf(matching)
         }
 

@@ -108,7 +108,11 @@ class ClickHouseSpanRepository(
             }
         }.onFailure { logger.warn(it) { "getTraceById failed for trace=$traceId" } }
 
-    override suspend fun listRuns(filter: RunFilter): Result<List<AgentRunRow>> =
+    override suspend fun listRuns(
+        filter: RunFilter,
+        limit: Int,
+        offset: Int,
+    ): Result<List<AgentRunRow>> =
         runCatching {
             // Build the WHERE from ONLY non-null filter fields; every value is a {name:Type}
             // placeholder (T-02-06) — predicate fragments are constant strings, values never inlined.
@@ -143,6 +147,12 @@ class ClickHouseSpanRepository(
                 params["dateTo"] = TS_FORMAT.format(it)
             }
 
+            // Pagination bounds are bound as {limit:UInt32}/{offset:UInt32} placeholders, exactly
+            // like the predicate values above — never interpolated (T-02-06). Clamping is the route
+            // mapper's responsibility (Plan 02); the repository binds whatever it is given.
+            params["limit"] = limit
+            params["offset"] = offset
+
             val where = if (predicates.isEmpty()) "" else "WHERE " + predicates.joinToString(" AND ")
             val sql =
                 """
@@ -150,7 +160,8 @@ class ClickHouseSpanRepository(
                        InputTokens, OutputTokens, CostUsd, MaxSaturation, SpanCount
                 FROM $AGENT_RUNS_TABLE FINAL
                 $where
-                ORDER BY StartTime, TraceId
+                ORDER BY StartTime DESC, TraceId DESC
+                LIMIT {limit:UInt32} OFFSET {offset:UInt32}
                 """.trimIndent()
 
             client

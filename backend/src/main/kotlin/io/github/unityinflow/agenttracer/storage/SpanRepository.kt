@@ -36,8 +36,29 @@ interface SpanRepository {
     /**
      * Returns the `agent_runs` rollup rows matching [filter] — applying only its non-null fields
      * (agent / model / cost range / outcome / date range) as parameterized predicates.
+     *
+     * Rows are newest-first (`StartTime DESC, TraceId DESC`) and paginated: at most [limit] rows
+     * starting after [offset] rows (D-05 / API-03). Both [limit] and [offset] are bound as
+     * `{limit:UInt32}` / `{offset:UInt32}` placeholders by the implementation — never
+     * string-interpolated (T-02-06). The repository binds whatever it is given; clamping
+     * out-of-range values (default/max-cap on [limit], `offset >= 0`) is the route mapper's job
+     * (Plan 02 `RunListMapper`), not the repository's. Callers with no preference pass
+     * [DEFAULT_LIMIT] and offset `0`.
      */
-    suspend fun listRuns(filter: RunFilter): Result<List<AgentRunRow>>
+    suspend fun listRuns(
+        filter: RunFilter,
+        limit: Int,
+        offset: Int,
+    ): Result<List<AgentRunRow>>
+
+    companion object {
+        /**
+         * Default page size for [listRuns] — the single source of truth shared by the interface
+         * KDoc default and the storage tests. The route mapper (Plan 02) applies this when a
+         * request omits `limit`, and caps requests at its own max (≤ 500, V5).
+         */
+        const val DEFAULT_LIMIT: Int = 50
+    }
 
     /**
      * Point lookup of the payload for `(traceId, spanId)` on the `payloads` sort key, with
