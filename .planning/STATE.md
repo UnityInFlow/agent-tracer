@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 4 context gathered
-last_updated: "2026-06-23T19:33:19.430Z"
+last_updated: "2026-06-23T19:43:55.758Z"
 last_activity: 2026-06-23 -- Phase 04 execution started
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 18
-  completed_plans: 16
+  completed_plans: 17
   percent: 60
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-06-12)
 ## Current Position
 
 Phase: 04 (query-api-demo-emitter-compose-stack) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-06-23 -- Phase 04 execution started
 
@@ -68,6 +68,7 @@ Progress: [██████████] 100% (Phase 3 plans)
 | Phase 04 P01 | ~8 min | 3 tasks | 7 files |
 | Phase 04 P02 | 20m | 2 tasks | 7 files |
 | Phase 04 P03 | ~10 min | 3 tasks | 7 files |
+| Phase 04 P04 | ~6 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -116,6 +117,8 @@ Recent decisions affecting current work:
 - [Phase ?]: [04-03]: demo-emitter is the SOLE producer of unityinflow.context.saturation_pct — STATE saturation blocker mitigated for SC3
 - [Phase ?]: [04-03]: SeededRunFactory resolves an immutable seeded RunScenario first, then emits as a pure OTel walk — determinism (SC4) isolated from side effects; keys from agent-semconv constants only (CONV-01)
 - [Phase ?]: [04-03]: added opentelemetry-sdk-testing (test scope) for InMemorySpanExporter so SC4 determinism is provable with no live receiver
+- [Phase ?]: [04-04]: Query REST API served on a SECOND embeddedServer(Netty,8080) with ContentNegotiation{json()} isolated to it; OTLP :4318 protobuf receiver untouched (Pitfall 1). queryServer drained in shutdown() alongside ktor.stop (no :8080 port leak)
+- [Phase ?]: [04-04]: QueryApiTest Wave-0 stub needed explicit this@application.install(...) receiver to compile; route uses real Plan-02 symbols. Last Wave-0 stub flipped GREEN — full :backend:test source set compiles
 
 ### Pending Todos
 
@@ -139,6 +142,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-23T19:32:56.839Z
+Last session: 2026-06-23T19:43:22.742Z
 Stopped at: Phase 4 context gathered
 Resume file: .planning/phases/04-query-api-demo-emitter-compose-stack/04-CONTEXT.md

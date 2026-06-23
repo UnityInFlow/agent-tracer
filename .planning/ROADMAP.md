@@ -126,7 +126,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Wave 3** *(blocked on Wave 2)*
 
-- [ ] 04-04-PLAN.md — Query routes over a new isolated `embeddedServer(:8080)` (GET /api/runs, /api/runs/{id}/dag, /api/runs/{id}/saturation) + /healthz, wired into RunningReceivers/shutdown drain; ContentNegotiation isolated from the protobuf OTLP server (API-01/02/03/04, DIST-01)
+- [x] 04-04-PLAN.md — Query routes over a new isolated `embeddedServer(:8080)` (GET /api/runs, /api/runs/{id}/dag, /api/runs/{id}/saturation) + /healthz, wired into RunningReceivers/shutdown drain; ContentNegotiation isolated from the protobuf OTLP server (API-01/02/03/04, DIST-01)
 
 **Wave 4** *(blocked on Wave 3)*
 
@@ -158,5 +158,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Attribute Convention & Domain Model | 4/4 | Complete    | 2026-06-14 |
 | 2. ClickHouse Storage Layer | 5/5 | Complete    | 2026-06-22 |
 | 3. OTLP Ingestion | 3/4 | In Progress|  |
-| 4. Query API, Demo Emitter & Compose Stack | 3/5 | In Progress|  |
+| 4. Query API, Demo Emitter & Compose Stack | 4/5 | In Progress|  |
 | 5. Frontend Visualization | 0/TBD | Not started | - |
