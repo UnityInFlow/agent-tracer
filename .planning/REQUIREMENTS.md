@@ -44,7 +44,7 @@ Requirements for v0.0.1. Each maps to roadmap phases.
 
 ### Tooling
 
-- [ ] **TOOL-01**: A demo emitter generates realistic synthetic agent-run traces via OTLP for demos, e2e tests, and frontend development
+- [x] **TOOL-01**: A demo emitter generates realistic synthetic agent-run traces via OTLP for demos, e2e tests, and frontend development
 
 ### Distribution
 
@@ -100,7 +100,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | API-02 | Phase 4 | Complete |
 | API-03 | Phase 4 | Complete |
 | API-04 | Phase 4 | Complete |
-| TOOL-01 | Phase 4 | Pending |
+| TOOL-01 | Phase 4 | Complete |
 | DIST-01 | Phase 4 | Pending |
 | VIZ-01 | Phase 5 | Pending |
 | VIZ-02 | Phase 5 | Pending |
