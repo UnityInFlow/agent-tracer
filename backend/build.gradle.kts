@@ -1,5 +1,10 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    // @Serializable query/UI DTOs (Phase 4); compiler plugin only — ContentNegotiation
+    // is installed on the new :8080 query server in Plan 04, not here.
+    alias(libs.plugins.kotlin.serialization)
+    // Runnable-jar packaging (installDist/distZip/run) the Compose tracer image (Plan 05) runs from.
+    application
     // NOT publishing — the extractor stays internal in v0.0.1 (D-03).
 }
 
@@ -29,6 +34,13 @@ dependencies {
     // transitive 4.34.0 (Pitfall 3 — a regression triggers NoSuchMethodError at runtime).
     implementation(libs.protobuf.java)
 
+    // ── JSON query/UI API (Phase 4) ────────────────────────────────────────
+    // @Serializable DTOs + Ktor JSON ContentNegotiation. On the classpath now;
+    // ContentNegotiation { json() } is installed on the :8080 server in Plan 04.
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.ktor.server.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
+
     testImplementation(libs.junit5)
     testImplementation(libs.kotest.assertions)
     testImplementation(libs.mockk)
@@ -48,6 +60,12 @@ dependencies {
 
 kotlin {
     jvmToolchain(21)
+}
+
+application {
+    // Synthetic class for the file-level `fun main()` in app/TracerApplication.kt (file name + `Kt`).
+    // Gives installDist/distZip/run for the Compose tracer image (Plan 05).
+    mainClass.set("io.github.unityinflow.agenttracer.app.TracerApplicationKt")
 }
 
 tasks.test {
