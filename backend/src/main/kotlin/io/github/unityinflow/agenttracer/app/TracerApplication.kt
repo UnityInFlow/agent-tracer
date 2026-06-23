@@ -6,6 +6,7 @@ import io.github.unityinflow.agenttracer.ingest.OtlpDecoder
 import io.github.unityinflow.agenttracer.ingest.OtlpGrpcService
 import io.github.unityinflow.agenttracer.ingest.ReceiverConfig
 import io.github.unityinflow.agenttracer.ingest.otlpTraces
+import io.github.unityinflow.agenttracer.query.queryApi
 import io.github.unityinflow.agenttracer.storage.AgentSpanRowMapper
 import io.github.unityinflow.agenttracer.storage.ClickHouseClientFactory
 import io.github.unityinflow.agenttracer.storage.ClickHouseConfig
@@ -14,11 +15,16 @@ import io.github.unityinflow.agenttracer.storage.migrations.MigrationRunner
 import io.github.unityinflow.agenttracer.storage.pipeline.SpanWriter
 import io.grpc.Server
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
+import io.ktor.server.application.install
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.netty.NettyApplicationEngine
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -62,6 +68,14 @@ private const val KTOR_GRACE_MILLIS = 1_000L
 private const val KTOR_SHUTDOWN_TIMEOUT_MILLIS = 5_000L
 
 /**
+ * Port of the read-only query/JSON server (API-01..04 + the DIST-01 `/healthz` liveness target). A
+ * SEPARATE [io.ktor.server.engine.EmbeddedServer] from the :4318 OTLP receiver so the JSON
+ * [ContentNegotiation] plugin is isolated to this server only and never intercepts the OTLP
+ * `application/x-protobuf` bodies (Pitfall 1).
+ */
+private const val QUERY_PORT = 8080
+
+/**
  * A booted set of receivers plus the resources whose lifecycle the bootstrap owns. The IT and
  * [main] both shut down through [shutdown]; the handle exposes the live [ports]/[writer]/[client]
  * so a test can drive spans through the started transports and then assert post-drain persistence.
@@ -72,6 +86,9 @@ private const val KTOR_SHUTDOWN_TIMEOUT_MILLIS = 5_000L
  * @property repository the read seam tests use to assert spans landed (`getTraceById`).
  * @property grpc the started standalone gRPC server (:grpcPort).
  * @property ktor the started Ktor/Netty HTTP server (:httpPort).
+ * @property queryServer the started Ktor/Netty JSON query server (:[QUERY_PORT]) hosting the
+ *   read-only query REST API + `/healthz`. It has no writer/intake, so it is simply stopped
+ *   ports-first alongside [ktor] in [shutdown] (Pitfall 3 — two servers, one drain).
  * @property writerScope the lifecycle [CoroutineScope] owning the [SpanWriter] consumer coroutine;
  *   cancelled LAST so the writer is never torn out from under an in-flight flush.
  * @property grpcCallScope the gRPC service's OWN per-call request [CoroutineScope], a child of
@@ -85,6 +102,7 @@ class RunningReceivers(
     val repository: ClickHouseSpanRepository,
     val grpc: Server,
     val ktor: EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration>,
+    val queryServer: EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration>,
     val writerScope: CoroutineScope,
     val grpcCallScope: CoroutineScope,
     val config: ReceiverConfig,
@@ -133,8 +151,33 @@ suspend fun bootReceivers(
             installOtlp(decoder, writer, receiverConfig)
         }.start(wait = false)
 
-    logger.info { "Receivers up: HTTP :${receiverConfig.httpPort}, gRPC :${receiverConfig.grpcPort}" }
-    return RunningReceivers(client, writer, repository, grpc, ktor, writerScope, grpcCallScope, receiverConfig)
+    // Ktor/Netty (:QUERY_PORT) — the read-only JSON query server. ContentNegotiation { json() } is
+    // installed on THIS server ONLY (never the OTLP Application above): the JSON plugin must not touch
+    // the protobuf receiver, or it would intercept application/x-protobuf bodies (Pitfall 1). The
+    // repository built above is the read seam; the query layer holds no SQL.
+    val queryServer =
+        embeddedServer(Netty, port = QUERY_PORT) {
+            install(ContentNegotiation) { json() }
+            routing {
+                get("/healthz") { call.respondText("ok") }
+                queryApi(repository)
+            }
+        }.start(wait = false)
+
+    logger.info {
+        "Receivers up: HTTP :${receiverConfig.httpPort}, gRPC :${receiverConfig.grpcPort}, query :$QUERY_PORT"
+    }
+    return RunningReceivers(
+        client,
+        writer,
+        repository,
+        grpc,
+        ktor,
+        queryServer,
+        writerScope,
+        grpcCallScope,
+        receiverConfig,
+    )
 }
 
 /** Installs the OTLP/HTTP route on this Ktor [Application], sharing the pipeline's backpressure signal. */
@@ -161,6 +204,9 @@ suspend fun RunningReceivers.shutdown() {
     //    new export() is invoked; in-flight RPCs have returned but their launched coroutines may not.
     grpc.shutdown().awaitTermination(GRPC_SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)
     ktor.stop(gracePeriodMillis = KTOR_GRACE_MILLIS, timeoutMillis = KTOR_SHUTDOWN_TIMEOUT_MILLIS)
+    // The :QUERY_PORT JSON server is read-only (no writer/intake), so it drains ports-first alongside
+    // the OTLP HTTP server — releasing :8080 cleanly on SIGTERM / `docker compose down` (Pitfall 3, T-04-15).
+    queryServer.stop(gracePeriodMillis = KTOR_GRACE_MILLIS, timeoutMillis = KTOR_SHUTDOWN_TIMEOUT_MILLIS)
     // 2. Quiescence barrier (CR-01/CR-02): join the gRPC call scope's children so every launched
     //    export coroutine has finished handing its spans to the writer BEFORE the intake closes.
     val grpcCallJob: Job = grpcCallScope.coroutineContext.job
