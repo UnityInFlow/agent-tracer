@@ -21,8 +21,33 @@ findings:
   warning: 5
   info: 3
   total: 10
-status: issues_found
+status: fixed
+fixed_at: 2026-06-23T00:00:00Z
+resolved:
+  - CR-01
+  - CR-02
+  - WR-01
+  - WR-02
+  - WR-03
+  - WR-04
+  - WR-05
+remaining_info:
+  - IN-01
+  - IN-02
+  - IN-03
+fix_commits:
+  - a7e5fd4  # CR-01 CR-02 WR-01 WR-02 WR-05 — lifecycle drain + shutdown-hook window
+  - 6f433f1  # WR-03 — HTTP body cap on actual bytes read
+  - af846ef  # WR-04 — fail fast on malformed receiver env vars
 ---
+
+> **Resolution (2026-06-23):** All Critical and Warning findings below
+> (CR-01, CR-02, WR-01..WR-05) are FIXED. The 3 Info findings (IN-01..IN-03)
+> are intentionally left as-is. Backend compile + ktlint clean; all unit
+> suites green with 0 skipped (OtlpDecoderTest 15, OtlpHttpRoutesTest 7 incl.
+> 2 new chunked-body cases, OtlpGrpcServiceTest 3, new ReceiverConfigTest 4).
+> The only failing tests are the 6 Testcontainers ITs (ContainerLaunchException
+> — no Docker/ryuk in this environment), which are environmental, not code.
 
 # Phase 3: Code Review Report
 
