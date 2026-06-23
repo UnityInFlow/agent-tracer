@@ -6,7 +6,9 @@ import io.grpc.stub.StreamObserver
 import io.opentelemetry.proto.collector.trace.v1.ExportTraceServiceRequest
 import io.opentelemetry.proto.collector.trace.v1.ExportTraceServiceResponse
 import io.opentelemetry.proto.collector.trace.v1.TraceServiceGrpc
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import io.grpc.Status as GrpcStatus
 
@@ -23,9 +25,17 @@ import io.grpc.Status as GrpcStatus
  *
  * **Callback → suspend coroutine bridge (Pitfall 2):** [export] is callback-style (`StreamObserver`)
  * but [SpanWriter.send] is `suspend`. The bridge `launch`es the decode/send/complete on the
- * server-lifecycle [scope] and completes the observer from inside the coroutine. It NEVER calls
+ * per-call request [scope] and completes the observer from inside the coroutine. It NEVER calls
  * `runBlocking`/`Thread.sleep`/raw threads inside [export] (CLAUDE.md raw-thread ban): blocking a
  * grpc-netty event-loop thread stalls the transport and looks like silent data loss.
+ *
+ * **Shutdown ordering (CR-01/CR-02):** [scope] is the gRPC service's OWN per-call request scope —
+ * distinct from the [SpanWriter]'s consumer scope. The bootstrap drains in the order: stop the
+ * gRPC/HTTP ports → join THIS scope so every in-flight `export` coroutine has finished its
+ * `writer.send` → THEN `writer.drainAndClose()`. That barrier is why an accepted span can never hit
+ * a closed intake channel. If a call is admitted after the scope is no longer active (the shutdown
+ * window), [export] fails fast with `UNAVAILABLE` instead of silently `launch`ing a no-op coroutine
+ * that would leave the client hanging until its deadline.
  *
  * **Saturation → `RESOURCE_EXHAUSTED` (D-01):** when [BackpressureSignal.isSaturated] is `true`,
  * [export] fails FAST with `io.grpc.Status.RESOURCE_EXHAUSTED` BEFORE launching/decoding — no body
@@ -55,7 +65,9 @@ import io.grpc.Status as GrpcStatus
  * @param decoder the shared transport-agnostic OTLP decoder (03-01, D-06).
  * @param writer the single Phase-2 batching pipeline seam every accepted span is handed to.
  * @param signal the first-class backpressure signal read for the D-01 fail-fast RESOURCE_EXHAUSTED.
- * @param scope the server-lifecycle [CoroutineScope] the per-call decode/send bridge is launched on.
+ * @param scope the per-call request [CoroutineScope] the decode/send bridge is launched on — distinct
+ *   from the writer's consumer scope so shutdown can join in-flight calls BEFORE draining the writer
+ *   (CR-01/CR-02). Must outlive no longer than a single drain cycle.
  */
 class OtlpGrpcService(
     private val decoder: OtlpDecoder,
@@ -82,23 +94,46 @@ class OtlpGrpcService(
             return
         }
 
-        // Callback → suspend bridge: launch on the lifecycle scope, complete the observer inside.
+        // CR-02: launch-after-cancel is a silent no-op (the coroutine never runs, the observer is
+        // never completed, the client hangs to its deadline, the span vanishes). If the request scope
+        // is shutting down, refuse the call cleanly with UNAVAILABLE (retryable) instead of launching.
+        if (!scope.isActive) {
+            responseObserver.onError(
+                GrpcStatus.UNAVAILABLE
+                    .withDescription("server shutting down; retry")
+                    .asRuntimeException(),
+            )
+            return
+        }
+
+        // Callback → suspend bridge: launch on the per-call request scope, complete the observer inside.
         // NEVER runBlocking/Thread.sleep here (Pitfall 2 — blocking a grpc-netty event-loop thread
         // stalls the transport). SpanWriter.send is suspend; this is the only legal way to await it.
         scope.launch {
-            try {
-                val result = decoder.decode(request)
-                // INGEST-03: accepted spans flow through the batching pipeline only — no repo call.
-                result.accepted.forEach { writer.send(it.span, it.context) }
-                responseObserver.onNext(OtlpResponses.buildResponse(result))
-                responseObserver.onCompleted()
-            } catch (e: Exception) {
-                // A3: an undecodable body is already rejected by gRPC's marshaller before export(),
-                // so reaching here is an internal fault, not a client error → INTERNAL.
-                responseObserver.onError(
-                    GrpcStatus.INTERNAL.withDescription(e.message).asRuntimeException(),
-                )
-            }
+            // WR-01: the try wraps ONLY decode/send so a throw from a terminal observer call
+            // (onNext/onCompleted on an already-cancelled call) can never re-enter onError on a
+            // terminated observer (grpc-java's "call already closed" IllegalStateException). The
+            // happy-path terminal calls live OUTSIDE the try.
+            val response =
+                try {
+                    val result = decoder.decode(request)
+                    // INGEST-03: accepted spans flow through the batching pipeline only — no repo call.
+                    result.accepted.forEach { writer.send(it.span, it.context) }
+                    OtlpResponses.buildResponse(result)
+                } catch (e: CancellationException) {
+                    // WR-02: cooperative cancellation (scope cancelled mid-send) is NOT an internal
+                    // fault — rethrow so structured concurrency stays intact, never map it to INTERNAL.
+                    throw e
+                } catch (e: Exception) {
+                    // A3: an undecodable body is already rejected by gRPC's marshaller before export(),
+                    // so reaching here is an internal fault, not a client error → INTERNAL.
+                    responseObserver.onError(
+                        GrpcStatus.INTERNAL.withDescription(e.message).asRuntimeException(),
+                    )
+                    return@launch
+                }
+            responseObserver.onNext(response)
+            responseObserver.onCompleted()
         }
     }
 }
