@@ -1,0 +1,65 @@
+# agent-tracer — all-in-one cold-start stack (DIST-01 / SC5 / D-07).
+#
+# `docker compose -f docker/compose.yaml up` cold-starts:
+#   1. clickhouse  (:26.3 LTS pin, never a floating tag) — healthy on :8123/ping
+#   2. tracer      (eclipse-temurin:21-jre)   — gated on ClickHouse healthy so the
+#      Phase-3 migrate-then-serve lifecycle only runs against a live CH (D-04);
+#      healthy on :8080/healthz via the curl/wget-free probe
+#   3. demo-emitter (one-shot seeder)          — gated on tracer healthy, runs once
+#      (restart: "no"), exports N seeded runs to the tracer over OTLP/HTTP, exits
+#
+# After a cold up, GET :8080/api/runs serves the seeded runs (SC5 served-queries proof).
+#
+# Build context is the repo root (`..`) so the Dockerfiles can run ./gradlew.
+# ClickHouse credentials are supplied ONLY via CLICKHOUSE_* runtime env — never a
+# password literal here (threat T-04-16). The demo-emitter is seed-on-up by default
+# (D-07); there is no profile gate so a plain `up` proves the full pipeline.
+
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:26.3   # LTS pin — never a floating tag (T-04-17)
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      # The ClickHouse image HAS wget; probe its HTTP /ping.
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8123/ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  tracer:
+    build:
+      context: ..
+      dockerfile: docker/tracer.Dockerfile
+    environment:
+      # Point the tracer at the in-network ClickHouse. No password literal —
+      # the default ClickHouse user has an empty password (ClickHouseConfig.fromEnv).
+      CLICKHOUSE_URL: "http://clickhouse:8123/"
+    depends_on:
+      clickhouse:
+        condition: service_healthy   # migrate→serve only once CH is live (Phase-3 D-04)
+    ports:
+      - "4317:4317"   # OTLP/gRPC
+      - "4318:4318"   # OTLP/HTTP
+      - "8080:8080"   # JSON query API + /healthz
+    healthcheck:
+      test: ["CMD", "/app/healthcheck.sh"]   # curl/wget-free /dev/tcp probe (Pitfall 4)
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+
+  demo-emitter:
+    build:
+      context: ..
+      dockerfile: docker/emitter.Dockerfile
+    environment:
+      OTLP_ENDPOINT: "http://tracer:4318/v1/traces"
+      # DEMO_SEED / DEMO_RUNS use the emitter's built-in defaults (42 / 20);
+      # override here to change the seeded dataset.
+    depends_on:
+      tracer:
+        condition: service_healthy   # fire only once the tracer serves :8080/healthz
+    restart: "no"                    # one-shot seeder: run once, then exit (SC5)
