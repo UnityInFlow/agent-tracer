@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 4 context gathered
-last_updated: "2026-06-23T19:12:57.517Z"
+last_updated: "2026-06-23T19:24:19.226Z"
 last_activity: 2026-06-23 -- Phase 04 execution started
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 18
-  completed_plans: 14
+  completed_plans: 15
   percent: 60
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-06-12)
 ## Current Position
 
 Phase: 04 (query-api-demo-emitter-compose-stack) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-06-23 -- Phase 04 execution started
 
@@ -66,6 +66,7 @@ Progress: [██████████] 100% (Phase 3 plans)
 | Phase 03 P03 | 7min | 2 tasks | 4 files |
 | Phase 03 P04 | ~18 min | 3 tasks | 4 files |
 | Phase 04 P01 | ~8 min | 3 tasks | 7 files |
+| Phase 04 P02 | 20m | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -110,6 +111,7 @@ Recent decisions affecting current work:
 - [Phase ?]: [04-01]: listRuns binds limit/offset as {limit:UInt32}/{offset:UInt32} placeholders, never interpolated (T-02-06); clamping deferred to Plan 02 RunListMapper
 - [Phase ?]: [04-01]: JSON stack + application packaging plugin added to backend; ContentNegotiation install deferred to Plan 04 :8080 server
 - [Phase ?]: [04-01]: Wave-0 stubs (DagAssembler/SaturationAssembler/RunListMapper/QueryApi) are honestly RED until Plans 02/04 land; no @Disabled
+- [Phase ?]: Query DTOs placed in the query package (not query/dto): the Plan-01 Wave-0 stubs import DagResponse/SaturationResponse/RunSummary unqualified, making same-package placement the binding contract
 
 ### Pending Todos
 
@@ -133,6 +135,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-23T19:12:20.525Z
+Last session: 2026-06-23T19:23:59.510Z
 Stopped at: Phase 4 context gathered
 Resume file: .planning/phases/04-query-api-demo-emitter-compose-stack/04-CONTEXT.md

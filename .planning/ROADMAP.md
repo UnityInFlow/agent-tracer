@@ -121,7 +121,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Wave 2** *(blocked on Wave 1; query package and demo-emitter own disjoint files → run in parallel)*
 
-- [ ] 04-02-PLAN.md — `query/` transform layer: orphan-tolerant flat DAG assembler + subtree cost roll-up (D-01/D-02/D-03), saturation timeline (D-04), run-list param→filter mapper with validation + outcome derivation (D-05), immutable @Serializable DTOs (API-01/02/03/04)
+- [x] 04-02-PLAN.md — `query/` transform layer: orphan-tolerant flat DAG assembler + subtree cost roll-up (D-01/D-02/D-03), saturation timeline (D-04), run-list param→filter mapper with validation + outcome derivation (D-05), immutable @Serializable DTOs (API-01/02/03/04)
 - [ ] 04-03-PLAN.md — Demo emitter: new `demo-emitter` Gradle module, OTel-SDK OTLP client, seeded full-convention nested-subagent span trees with rising saturation, one-shot `main` (D-06) (TOOL-01)
 
 **Wave 3** *(blocked on Wave 2)*
@@ -158,5 +158,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Attribute Convention & Domain Model | 4/4 | Complete    | 2026-06-14 |
 | 2. ClickHouse Storage Layer | 5/5 | Complete    | 2026-06-22 |
 | 3. OTLP Ingestion | 3/4 | In Progress|  |
-| 4. Query API, Demo Emitter & Compose Stack | 1/5 | In Progress|  |
+| 4. Query API, Demo Emitter & Compose Stack | 2/5 | In Progress|  |
 | 5. Frontend Visualization | 0/TBD | Not started | - |
