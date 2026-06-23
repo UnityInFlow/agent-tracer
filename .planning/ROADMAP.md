@@ -113,7 +113,24 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. The demo emitter generates realistic synthetic agent-run traces via OTLP that exercise the full attribute convention (skills, subagents, costs, saturation)
   5. `docker compose up` on a cold start brings up tracer + ClickHouse, ingests demo traces end-to-end, and serves API queries
 
-**Plans**: TBD
+**Plans**: 5 plans in 4 waves
+
+**Wave 1**
+
+- [ ] 04-01-PLAN.md — Foundation: net-new JSON stack (kotlinx-serialization-json + ktor content-negotiation/serialization) + `application` packaging plugin; `listRuns` newest-first + offset/limit (D-05); Wave-0 RED test stubs (DagAssembler/Saturation/RunList/QueryApi) (API-03)
+
+**Wave 2** *(blocked on Wave 1; query package and demo-emitter own disjoint files → run in parallel)*
+
+- [ ] 04-02-PLAN.md — `query/` transform layer: orphan-tolerant flat DAG assembler + subtree cost roll-up (D-01/D-02/D-03), saturation timeline (D-04), run-list param→filter mapper with validation + outcome derivation (D-05), immutable @Serializable DTOs (API-01/02/03/04)
+- [ ] 04-03-PLAN.md — Demo emitter: new `demo-emitter` Gradle module, OTel-SDK OTLP client, seeded full-convention nested-subagent span trees with rising saturation, one-shot `main` (D-06) (TOOL-01)
+
+**Wave 3** *(blocked on Wave 2)*
+
+- [ ] 04-04-PLAN.md — Query routes over a new isolated `embeddedServer(:8080)` (GET /api/runs, /api/runs/{id}/dag, /api/runs/{id}/saturation) + /healthz, wired into RunningReceivers/shutdown drain; ContentNegotiation isolated from the protobuf OTLP server (API-01/02/03/04, DIST-01)
+
+**Wave 4** *(blocked on Wave 3)*
+
+- [ ] 04-05-PLAN.md — Compose all-in-one: ClickHouse :26.3 LTS → tracer (eclipse-temurin:21-jre, health-gated) → one-shot demo seeder; temurin-jre-safe healthcheck + cold-start smoke (D-07, SC5 manual/CI-Docker verify) (DIST-01)
 
 ### Phase 5: Frontend Visualization
 
@@ -141,5 +158,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Attribute Convention & Domain Model | 4/4 | Complete    | 2026-06-14 |
 | 2. ClickHouse Storage Layer | 5/5 | Complete    | 2026-06-22 |
 | 3. OTLP Ingestion | 3/4 | In Progress|  |
-| 4. Query API, Demo Emitter & Compose Stack | 0/TBD | Not started | - |
+| 4. Query API, Demo Emitter & Compose Stack | 0/5 | Not started | - |
 | 5. Frontend Visualization | 0/TBD | Not started | - |
