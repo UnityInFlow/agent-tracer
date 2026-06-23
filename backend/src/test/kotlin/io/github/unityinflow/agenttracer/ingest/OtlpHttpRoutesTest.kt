@@ -19,6 +19,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
+import io.ktor.utils.io.ByteReadChannel
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.slot
@@ -190,6 +191,50 @@ class OtlpHttpRoutesTest {
             response.status shouldBe HttpStatusCode.PayloadTooLarge
             h.drain()
             h.flushedSpanCount.get() shouldBe 0
+        }
+    }
+
+    /**
+     * WR-03: a chunked / Content-Length-omitted body that exceeds the cap must STILL be rejected with
+     * 413 — the Content-Length fast-path can't see it, so the read-time cap is what catches it. Sending
+     * the body as a [ByteReadChannel] makes the client stream it WITHOUT a Content-Length header.
+     */
+    @Test
+    fun chunkedOversizedBodyReturns413AndWriterReceivesNothing() {
+        val h = Harness()
+        testApplication {
+            // Tiny cap; the over-cap body is streamed with NO Content-Length (the fast-path is blind to it).
+            application { routing { otlpTraces(OtlpDecoder(), h.writer, h.signal, config(httpMaxBodyBytes = 8)) } }
+            val response =
+                client.post("/v1/traces") {
+                    contentType(protobuf)
+                    setBody(ByteReadChannel(validRequestBytes()))
+                }
+            response.status shouldBe HttpStatusCode.PayloadTooLarge
+            h.drain()
+            h.flushedSpanCount.get() shouldBe 0
+        }
+    }
+
+    /**
+     * WR-03 (complement): a chunked / Content-Length-omitted body UNDER the cap must still be accepted
+     * and decoded — proving the read-time cap doesn't break the streaming happy path.
+     */
+    @Test
+    fun chunkedUnderCapBodyIsAcceptedAndReachesWriter() {
+        val h = Harness()
+        testApplication {
+            application { routing { otlpTraces(OtlpDecoder(), h.writer, h.signal, config()) } }
+            val response =
+                client.post("/v1/traces") {
+                    contentType(protobuf)
+                    setBody(ByteReadChannel(validRequestBytes()))
+                }
+            response.status shouldBe HttpStatusCode.OK
+            val body = ExportTraceServiceResponse.parseFrom(response.readRawBytes())
+            body.hasPartialSuccess() shouldBe false
+            h.drain()
+            h.flushedSpanCount.get() shouldBe 1
         }
     }
 }
