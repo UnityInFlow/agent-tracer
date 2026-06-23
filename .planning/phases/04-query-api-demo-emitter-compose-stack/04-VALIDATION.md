@@ -1,8 +1,8 @@
 ---
 phase: 04
 slug: query-api-demo-emitter-compose-stack
-status: draft
-nyquist_compliant: false
+status: approved
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-06-23
 ---
@@ -80,6 +80,6 @@ created: 2026-06-23
 - [ ] Wave 0 covers all MISSING references
 - [ ] No watch-mode flags
 - [ ] Feedback latency < 90s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved 2026-06-23 (plan-checker pass after revision; `wave_0_complete` flips during execution when Plan 04-01 Task 3 creates the RED stubs)

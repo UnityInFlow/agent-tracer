@@ -543,19 +543,23 @@ val queryServer = embeddedServer(Netty, port = 8080) {
 | A4 | `opentelemetry-exporter-otlp` version is fully governed by `otel-bom` 1.63.0 (no explicit pin) | Standard Stack | Low — standard BOM usage; the catalog already declares it version-less |
 | A5 | A second `embeddedServer(Netty, 8080)` coexists cleanly with the :4318 receiver server in one JVM | Architecture | Low — Netty supports multiple servers; Phase-3 already runs Ktor-Netty + grpc-netty-shaded together |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **List-level `outcome` source (D-05 "root-span status").**
    - What we know: `AgentRunRow.outcome` exists (anyLast rollup); true root status needs the root span.
    - What's unclear: whether the anyLast proxy satisfies D-05 at list scale, or a root-span derivation is mandatory.
    - Recommendation: list endpoint uses `AgentRunRow.outcome`; DAG endpoint exposes true root status. Confirm with planner (A3).
+   - **RESOLVED: Plan 04-02 (user-confirmed)** — list `outcome` = `AgentRunRow.outcome` proxy (documented in `RunSummary.outcome` KDoc); true root-span status on the per-run `/api/runs/{id}/dag` endpoint.
 2. **Tracer healthcheck mechanism in `eclipse-temurin:21-jre`.**
    - What we know: temurin-jre likely has no `curl`/`wget`; the emitter must only start after the tracer is *healthy* (D-07).
    - Recommendation: add a `GET /healthz` route on :8080 and pick a check that works in the base image (bash `/dev/tcp`, a baked busybox, or a tiny JVM health-probe). Decide in planning.
+   - **RESOLVED: Plan 04-05** — `GET /healthz` route + a `temurin-jre`-compatible Compose healthcheck; the emitter starts only after the tracer is healthy.
 3. **`--profile demo` (discretionary).**
    - Whether to gate the seeder behind a Compose profile so production `up` is demo-free. Default per D-07 is seed-on-`up`; offering `--profile demo` is a low-cost nice-to-have.
+   - **RESOLVED: Plan 04-05** — seed-on-`up` is the default (per D-07); `--profile demo` adopted as the low-cost opt-in gate.
 4. **Demo realism depth (SC4).**
    - How elaborate the seeded runs must be (how many subagent levels, skill variety, error/partial outcomes, saturation curve shape) to count as "realistic." Recommend: ≥2 subagent levels, ≥3 skills, a mix of ok/error outcomes, a rising saturation series per run — confirm threshold with planner.
+   - **RESOLVED: Plan 04-03** — demo emitter seeds ≥2 subagent levels, ≥3 skills, a mix of ok/error outcomes, and a rising per-run saturation series.
 
 ## Sources
 
