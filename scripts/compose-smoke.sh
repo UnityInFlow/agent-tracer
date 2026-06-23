@@ -32,11 +32,30 @@ echo "Compose file: ${COMPOSE_FILE}"
 echo "--- cold up (build + start, detached) ---"
 compose up -d --build
 
-echo "--- polling ${RUNS_URL} for a non-empty runs list (timeout ${TIMEOUT_SECONDS}s) ---"
+# Fetch /api/runs and echo a non-empty-runs match (empty otherwise).
+#
+# Two transports are tried, in order:
+#   1. HOST  — curl http://localhost:8080/api/runs (the published port).
+#   2. IN-NETWORK fallback — `compose exec clickhouse wget http://tracer:8080/api/runs`.
+#      Some hosts (Docker Desktop with HSTS / a local TLS-upgrade proxy) transparently
+#      307-redirect `localhost:8080` to `https://`, which curl cannot follow against a
+#      plaintext server. The in-network probe goes container->container and bypasses any
+#      host-side localhost interception — it reflects what a real OTel/UI client on the
+#      Docker network sees. A PASS on EITHER transport proves the tracer serves the runs.
+fetch_runs_body() {
+  local body
+  body="$(curl -fsS "${RUNS_URL}" 2>/dev/null || true)"
+  if ! printf '%s' "${body}" | grep -Eq '"runs"[[:space:]]*:[[:space:]]*\[[[:space:]]*\{'; then
+    # Host transport gave nothing usable (e.g. localhost->https 307); try in-network.
+    body="$(compose exec -T clickhouse wget -qO- "http://tracer:8080/api/runs" 2>/dev/null || true)"
+  fi
+  printf '%s' "${body}"
+}
+
+echo "--- polling ${RUNS_URL} (host) + http://tracer:8080/api/runs (in-network) for a non-empty runs list (timeout ${TIMEOUT_SECONDS}s) ---"
 deadline=$(( $(date +%s) + TIMEOUT_SECONDS ))
 while :; do
-  # Fetch the run list; tolerate connection refused while the tracer is still booting.
-  body="$(curl -fsS "${RUNS_URL}" 2>/dev/null || true)"
+  body="$(fetch_runs_body)"
 
   # PASS condition: a "runs" array with at least one element. Match a non-empty array
   # without assuming jq is installed (jq is not guaranteed on every runner).

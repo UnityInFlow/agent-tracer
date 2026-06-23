@@ -18,6 +18,13 @@
 services:
   clickhouse:
     image: clickhouse/clickhouse-server:26.3   # LTS pin — never a floating tag (T-04-17)
+    environment:
+      # Keep the classic permissive `default` user (empty-password auth allowed).
+      # Modern clickhouse-server images otherwise mark `default` REQUIRED_PASSWORD and
+      # reject the tracer's empty-password migrate-then-serve with Code 194 / HTTP 401.
+      # This is the SECRET-FREE fix (T-04-16): no password literal is introduced — the
+      # tracer's ClickHouseConfig.fromEnv empty-password default stays valid end-to-end.
+      CLICKHOUSE_SKIP_USER_SETUP: "1"
     ulimits:
       nofile:
         soft: 262144
