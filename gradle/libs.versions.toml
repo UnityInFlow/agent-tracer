@@ -57,6 +57,9 @@ grpc-inprocess = { module = "io.grpc:grpc-inprocess", version.ref = "grpc" }
 otel-bom = { module = "io.opentelemetry:opentelemetry-bom", version.ref = "opentelemetry-sdk" }
 otel-sdk = { module = "io.opentelemetry:opentelemetry-sdk" }
 otel-exporter-otlp = { module = "io.opentelemetry:opentelemetry-exporter-otlp" }
+# InMemorySpanExporter for the demo-emitter determinism test — captures emitted
+# spans in-process (no live receiver) so two same-seed runs can be compared (SC4).
+otel-sdk-testing = { module = "io.opentelemetry:opentelemetry-sdk-testing" }
 # ── JSON query/UI API (Phase 4) ────────────────────────────────────────────
 # kotlinx-serialization-json (@Serializable DTOs) + Ktor ContentNegotiation/JSON.
 # ContentNegotiation is installed ONLY on the new :8080 query server (Plan 04);

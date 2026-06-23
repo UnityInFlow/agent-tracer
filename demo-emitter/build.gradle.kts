@@ -24,6 +24,9 @@ dependencies {
 
     testImplementation(libs.junit5)
     testImplementation(libs.kotest.assertions)
+    // InMemorySpanExporter captures emitted spans in-process for the SC4
+    // determinism assertion (no live receiver needed).
+    testImplementation(libs.otel.sdk.testing)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
