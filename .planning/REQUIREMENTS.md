@@ -29,7 +29,7 @@ Requirements for v0.0.1. Each maps to roadmap phases.
 
 - [ ] **API-01**: API returns any agent run as an assembled DAG (parent-child span tree, assembled at query time)
 - [ ] **API-02**: API returns subagent hierarchy (nested parent-child agent relationships) within a run
-- [ ] **API-03**: API supports filtering runs by agent, model, cost range, outcome, and date range
+- [x] **API-03**: API supports filtering runs by agent, model, cost range, outcome, and date range
 - [ ] **API-04**: API returns the context-saturation series for a run (timeline data)
 
 ### Visualization
@@ -98,7 +98,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INGEST-03 | Phase 3 | Pending |
 | API-01 | Phase 4 | Pending |
 | API-02 | Phase 4 | Pending |
-| API-03 | Phase 4 | Pending |
+| API-03 | Phase 4 | Complete |
 | API-04 | Phase 4 | Pending |
 | TOOL-01 | Phase 4 | Pending |
 | DIST-01 | Phase 4 | Pending |
