@@ -48,7 +48,7 @@ Requirements for v0.0.1. Each maps to roadmap phases.
 
 ### Distribution
 
-- [ ] **DIST-01**: `docker compose up` starts the all-in-one stack (tracer + ClickHouse) and ingests traces end-to-end on a cold start
+- [x] **DIST-01**: `docker compose up` starts the all-in-one stack (tracer + ClickHouse) and ingests traces end-to-end on a cold start
 
 ## v2 Requirements
 
@@ -101,7 +101,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | API-03 | Phase 4 | Complete |
 | API-04 | Phase 4 | Complete |
 | TOOL-01 | Phase 4 | Complete |
-| DIST-01 | Phase 4 | Pending |
+| DIST-01 | Phase 4 | Complete |
 | VIZ-01 | Phase 5 | Pending |
 | VIZ-02 | Phase 5 | Pending |
 | VIZ-03 | Phase 5 | Pending |

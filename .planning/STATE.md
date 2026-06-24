@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
+status: verifying
 stopped_at: Phase 4 context gathered
-last_updated: "2026-06-23T19:43:55.758Z"
+last_updated: "2026-06-24T07:36:43.123Z"
 last_activity: 2026-06-23 -- Phase 04 execution started
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 18
-  completed_plans: 17
-  percent: 60
+  completed_plans: 18
+  percent: 80
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-06-12)
 
 Phase: 04 (query-api-demo-emitter-compose-stack) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-06-23 -- Phase 04 execution started
 
 Progress: [██████████] 100% (Phase 3 plans)
@@ -69,6 +69,7 @@ Progress: [██████████] 100% (Phase 3 plans)
 | Phase 04 P02 | 20m | 2 tasks | 7 files |
 | Phase 04 P03 | ~10 min | 3 tasks | 7 files |
 | Phase 04 P04 | ~6 min | 2 tasks | 3 files |
+| Phase 04 P05 | ~50 min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -119,6 +120,9 @@ Recent decisions affecting current work:
 - [Phase ?]: [04-03]: added opentelemetry-sdk-testing (test scope) for InMemorySpanExporter so SC4 determinism is provable with no live receiver
 - [Phase ?]: [04-04]: Query REST API served on a SECOND embeddedServer(Netty,8080) with ContentNegotiation{json()} isolated to it; OTLP :4318 protobuf receiver untouched (Pitfall 1). queryServer drained in shutdown() alongside ktor.stop (no :8080 port leak)
 - [Phase ?]: [04-04]: QueryApiTest Wave-0 stub needed explicit this@application.install(...) receiver to compile; route uses real Plan-02 symbols. Last Wave-0 stub flipped GREEN — full :backend:test source set compiles
+- [Phase 04-05]: Docker Compose all-in-one shipped (DIST-01/SC5/D-07) — cold-start ClickHouse :26.3 → tracer (eclipse-temurin:21-jre over installDist, health-gated) → one-shot demo-emitter seeder (restart: no); temurin-jre-safe /dev/tcp healthcheck (no curl/wget); CLICKHOUSE_SKIP_USER_SETUP=1 as the SECRET-FREE cold-start auth fix (no password literal, T-04-16)
+- [Phase 04-05]: SC5 cold-start smoke OBSERVED GREEN on real Docker (Docker Desktop 28.5.1) — non-empty GET :8080/api/runs after lifecycle-gated cold up. DIST-01 complete; Phase 4 all 5 plans done (18/18)
+- [Phase 04-05]: A plain docker compose up bypasses Testcontainers/Ryuk, so this SC5 run CLOSES the deferred Phase-2/3 ClickHouse Docker-gated IT carry-forward — the real-Docker migrate→serve→ingest→served-query path is now observed green against real ClickHouse 26.3 (the observation the INGEST/STOR ITs were waiting for)
 
 ### Pending Todos
 
@@ -142,6 +146,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-23T19:43:22.742Z
+Last session: 2026-06-24T07:35:42.965Z
 Stopped at: Phase 4 context gathered
 Resume file: .planning/phases/04-query-api-demo-emitter-compose-stack/04-CONTEXT.md

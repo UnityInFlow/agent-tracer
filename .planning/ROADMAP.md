@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Attribute Convention & Domain Model** - Publish the agent span attribute contract and build the gen_ai/unityinflow extractor (1 UAT gap → gap-closure plan 01-04 pending) (completed 2026-06-14)
 - [x] **Phase 2: ClickHouse Storage Layer** - Schema with typed agent columns, materialized views, payload storage, and the batching write pipeline (UAT blocker closed via gap-closure plan 02-05; storage ITs observed green on real ClickHouse) (completed 2026-06-22)
 - [ ] **Phase 3: OTLP Ingestion** - Spec-conformant OTLP/HTTP and OTLP/gRPC receivers feeding the single batching pipeline
-- [ ] **Phase 4: Query API, Demo Emitter & Compose Stack** - Backend milestone: DAG/filter/timeline API, synthetic trace generator, and `docker compose up` end-to-end
+- [x] **Phase 4: Query API, Demo Emitter & Compose Stack** - Backend milestone: DAG/filter/timeline API, synthetic trace generator, and `docker compose up` end-to-end (completed 2026-06-24)
 - [ ] **Phase 5: Frontend Visualization** - Interactive DAG with cost overlay, saturation timeline, nested subagents, replay mode, and filters
 
 ## Phase Details
@@ -130,7 +130,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Wave 4** *(blocked on Wave 3)*
 
-- [ ] 04-05-PLAN.md — Compose all-in-one: ClickHouse :26.3 LTS → tracer (eclipse-temurin:21-jre, health-gated) → one-shot demo seeder; temurin-jre-safe healthcheck + cold-start smoke (D-07, SC5 manual/CI-Docker verify) (DIST-01)
+- [x] 04-05-PLAN.md — Compose all-in-one: ClickHouse :26.3 LTS → tracer (eclipse-temurin:21-jre, health-gated) → one-shot demo seeder; temurin-jre-safe healthcheck + cold-start smoke (D-07, SC5 manual/CI-Docker verify) (DIST-01)
 
 ### Phase 5: Frontend Visualization
 
@@ -158,5 +158,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Attribute Convention & Domain Model | 4/4 | Complete    | 2026-06-14 |
 | 2. ClickHouse Storage Layer | 5/5 | Complete    | 2026-06-22 |
 | 3. OTLP Ingestion | 3/4 | In Progress|  |
-| 4. Query API, Demo Emitter & Compose Stack | 4/5 | In Progress|  |
+| 4. Query API, Demo Emitter & Compose Stack | 5/5 | Complete   | 2026-06-24 |
 | 5. Frontend Visualization | 0/TBD | Not started | - |
