@@ -158,5 +158,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Attribute Convention & Domain Model | 4/4 | Complete    | 2026-06-14 |
 | 2. ClickHouse Storage Layer | 5/5 | Complete    | 2026-06-22 |
 | 3. OTLP Ingestion | 3/4 | In Progress|  |
-| 4. Query API, Demo Emitter & Compose Stack | 5/5 | Complete   | 2026-06-24 |
+| 4. Query API, Demo Emitter & Compose Stack | 5/5 | Complete    | 2026-06-24 |
 | 5. Frontend Visualization | 0/TBD | Not started | - |
