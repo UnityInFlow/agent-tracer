@@ -8,7 +8,10 @@
 # in — the OTLP_ENDPOINT target is supplied via Compose runtime env.
 
 # ---- Stage 1: build the installDist distribution -------------------------------
-FROM eclipse-temurin:21-jdk AS builder
+# Builder pinned to the BUILD host platform: Gradle runs natively ONCE — the
+# runtime stage is COPY-only, so buildx assembles the foreign-arch variant with
+# zero QEMU (D-06).
+FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jdk AS builder
 WORKDIR /src
 
 COPY . .
@@ -19,6 +22,9 @@ RUN chmod +x ./gradlew && ./gradlew :demo-emitter:installDist --no-daemon
 # ---- Stage 2: minimal JRE runtime ----------------------------------------------
 FROM eclipse-temurin:21-jre AS runtime
 WORKDIR /app
+
+# Links the GHCR package to this repo (RESEARCH Pitfall 3).
+LABEL org.opencontainers.image.source="https://github.com/UnityInFlow/agent-tracer"
 
 COPY --from=builder /src/demo-emitter/build/install/demo-emitter/ /app/
 

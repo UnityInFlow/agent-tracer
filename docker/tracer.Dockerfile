@@ -9,7 +9,11 @@
 # Compose runtime env (mirrors ClickHouseConfig.fromEnv; threat T-04-16).
 
 # ---- Stage 1: build the installDist distribution -------------------------------
-FROM eclipse-temurin:21-jdk AS builder
+# Builder pinned to the BUILD host platform: Gradle runs natively ONCE — the
+# runtime stage below is COPY-only, so buildx assembles the foreign-arch variant
+# with zero QEMU (D-06, RESEARCH Pattern 2). The artifact is arch-independent
+# JVM bytecode.
+FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jdk AS builder
 WORKDIR /src
 
 # Copy the whole repo (Gradle needs settings + all modules to resolve :backend).
@@ -22,12 +26,16 @@ RUN chmod +x ./gradlew && ./gradlew :backend:installDist --no-daemon
 FROM eclipse-temurin:21-jre AS runtime
 WORKDIR /app
 
+# Links the GHCR package to this repo (RESEARCH Pitfall 3).
+LABEL org.opencontainers.image.source="https://github.com/UnityInFlow/agent-tracer"
+
 # The application-plugin distribution: launcher at /app/bin/backend + /app/lib/*.jar.
 COPY --from=builder /src/backend/build/install/backend/ /app/
 
 # curl/wget-free liveness probe (bash /dev/tcp) — eclipse-temurin:21-jre has neither (Pitfall 4).
-COPY docker/healthcheck.sh /app/healthcheck.sh
-RUN chmod +x /app/healthcheck.sh
+# COPY --chmod replaces the former RUN chmod: the runtime stage must stay
+# COPY-only so the amd64 leg builds without QEMU (D-06).
+COPY --chmod=0755 docker/healthcheck.sh /app/healthcheck.sh
 
 # OTLP/gRPC :4317, OTLP/HTTP :4318, JSON query API + /healthz :8080.
 EXPOSE 4317 4318 8080

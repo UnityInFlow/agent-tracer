@@ -1,0 +1,19 @@
+# agent-tracer — DEV build override (D-07).
+#
+# The quickstart docker/compose.yaml is PULL-ONLY (released GHCR images, D-13).
+# This override restores the from-source build contexts for development:
+#
+#   docker compose -f docker/compose.yaml -f docker/compose.build.yaml up --build
+#
+# Build context is the repo root (`..`) so the Dockerfiles can run ./gradlew.
+
+services:
+  tracer:
+    build:
+      context: ..
+      dockerfile: docker/tracer.Dockerfile
+
+  demo-emitter:
+    build:
+      context: ..
+      dockerfile: docker/emitter.Dockerfile

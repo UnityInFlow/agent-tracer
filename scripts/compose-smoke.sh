@@ -29,8 +29,17 @@ trap cleanup EXIT
 echo "=== agent-tracer SC5 cold-start smoke ==="
 echo "Compose file: ${COMPOSE_FILE}"
 
-echo "--- cold up (build + start, detached) ---"
-compose up -d --build
+# Two up modes (D-07/D-13, existing env-override convention like SMOKE_TIMEOUT):
+#   SMOKE_BUILD=1 -> dev mode: build from source via the compose.build.yaml override
+#   default (0)   -> release mode: pull released GHCR images only, never build
+if [ "${SMOKE_BUILD:-0}" = "1" ]; then
+  echo "--- cold up (dev: build + start, detached) ---"
+  docker compose -f "${COMPOSE_FILE}" -f "${SCRIPT_DIR}/../docker/compose.build.yaml" up -d --build
+else
+  echo "--- cold up (release: pull + start, detached) ---"
+  compose pull
+  compose up -d
+fi
 
 # Fetch /api/runs and echo a non-empty-runs match (empty otherwise).
 #

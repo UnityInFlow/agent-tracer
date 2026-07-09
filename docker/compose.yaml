@@ -10,7 +10,10 @@
 #
 # After a cold up, GET :8080/api/runs serves the seeded runs (SC5 served-queries proof).
 #
-# Build context is the repo root (`..`) so the Dockerfiles can run ./gradlew.
+# PULL-ONLY quickstart (D-07/D-13): this file references only released GHCR
+# images — a clean consumer never builds from source. Dev builds live in
+# docker/compose.build.yaml:
+#   docker compose -f docker/compose.yaml -f docker/compose.build.yaml up --build
 # ClickHouse credentials are supplied ONLY via CLICKHOUSE_* runtime env — never a
 # password literal here (threat T-04-16). The demo-emitter is seed-on-up by default
 # (D-07); there is no profile gate so a plain `up` proves the full pipeline.
@@ -37,9 +40,7 @@ services:
       retries: 20
 
   tracer:
-    build:
-      context: ..
-      dockerfile: docker/tracer.Dockerfile
+    image: ghcr.io/unityinflow/agent-tracer:0.1.0   # released image only — pull, never build (D-07)
     environment:
       # Point the tracer at the in-network ClickHouse. No password literal —
       # the default ClickHouse user has an empty password (ClickHouseConfig.fromEnv).
@@ -59,9 +60,7 @@ services:
       start_period: 20s
 
   demo-emitter:
-    build:
-      context: ..
-      dockerfile: docker/emitter.Dockerfile
+    image: ghcr.io/unityinflow/agent-tracer-demo-emitter:0.1.0   # released image only — pull, never build (D-07)
     environment:
       OTLP_ENDPOINT: "http://tracer:4318/v1/traces"
       # DEMO_SEED / DEMO_RUNS use the emitter's built-in defaults (42 / 20);
