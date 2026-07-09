@@ -9,6 +9,30 @@ token-cost overlays, context-window saturation timelines, and a replay mode — 
 semantics (plan steps, skill activations, context saturation, subagent spawns)
 instead of generic Jaeger/Zipkin spans.
 
+## Quickstart
+
+```bash
+git clone https://github.com/UnityInFlow/agent-tracer
+cd agent-tracer
+docker compose -f docker/compose.yaml up
+```
+
+This pulls **only released GHCR images** (`ghcr.io/unityinflow/agent-tracer`,
+`ghcr.io/unityinflow/agent-tracer-demo-emitter` and the pinned ClickHouse LTS) —
+nothing is built from source. The stack cold-starts ClickHouse, the tracer, and a
+one-shot demo-emitter that seeds example agent traces.
+
+Then open http://localhost:8080 — the seeded demo traces are served at
+[`/api/runs`](http://localhost:8080/api/runs) (the query API; the visual DAG UI
+ships with the frontend milestone). OTLP ingest listens on `:4317` (gRPC) and
+`:4318` (HTTP).
+
+To build from source instead, use the dev override:
+
+```bash
+docker compose -f docker/compose.yaml -f docker/compose.build.yaml up --build
+```
+
 ## The Convention
 
 agent-tracer is built against a public, versioned contract — a superset of the
@@ -24,7 +48,9 @@ emitters depend on the artifact instead of hardcoding strings.
 
 ## Status
 
-Planning and Phase 1 (attribute convention & domain model) in progress.
+v0.1.0 — backend released: OTLP ingest (gRPC + HTTP), ClickHouse storage, query
+API, demo-emitter, and the Docker Compose quickstart. The React DAG frontend is
+the next milestone.
 
 ## License
 
