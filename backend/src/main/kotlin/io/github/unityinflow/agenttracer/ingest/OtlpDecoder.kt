@@ -88,7 +88,15 @@ class OtlpDecoder {
                 // A2: SpanContext.timestamp is the span START time (the schema's order/partition key).
                 timestamp = Instant.ofEpochSecond(0, span.startTimeUnixNano),
             )
-        return SpanWriter.SpanEnvelope(agentSpan, context)
+        // Carry the OTLP envelope display names: Span.name + resource `service.name`. AgentSpan is
+        // attributes-only and SpanContext is identity-only — without these the SpanName/ServiceName
+        // columns land empty for every ingested span.
+        return SpanWriter.SpanEnvelope(
+            agentSpan,
+            context,
+            spanName = span.name,
+            serviceName = resourceView.string("service.name") ?: "",
+        )
     }
 }
 

@@ -19,8 +19,15 @@ import java.time.Instant
  * This file contains test-data factories only — no production code and no DB calls.
  */
 object SpanFixtures {
-    /** A fixed instant so partition/order assertions are reproducible. */
-    val BASE_TIME: Instant = Instant.parse("2026-06-22T10:00:00Z")
+    /**
+     * A recent instant (start of the current hour, UTC) — stable within a JVM run so
+     * partition/order assertions are deterministic, while staying inside the schema's
+     * 14-day `TTL toDateTime(Timestamp) + INTERVAL 14 DAY`. A fixed literal here is a
+     * time-bomb: once it ages past the TTL, ClickHouse silently drops the fixture rows
+     * (at TTL merges / `FINAL` reads) and every round-trip IT reads back empty
+     * (observed 2026-07-09, first real CI run). Same in-TTL anchoring as PartCountIT.
+     */
+    val BASE_TIME: Instant = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.HOURS)
 
     const val DEFAULT_TRACE_ID = "0af7651916cd43dd8448eb211c80319c"
     const val DEFAULT_SPAN_ID = "b7ad6b7169203331"

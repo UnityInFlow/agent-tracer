@@ -65,7 +65,10 @@ class OtlpHttpReceiverIT {
     private val mapper = AgentSpanRowMapper()
     private val decoder = OtlpDecoder()
 
-    // batchSize=1 makes the flush deterministic; drainAndClose() in each test flushes the in-flight buffer.
+    // batchSize=1 flushes every span immediately, so waitForSpans alone gates visibility. The writer
+    // is SHARED across both tests (PER_CLASS) — drainAndClose() lives ONLY in tearDown: closing it
+    // inside a test kills the second test's route (send on a closed channel → exporter 5xx →
+    // forceFlush false; observed 2026-07-09, first real IT run).
     private val writer = SpanWriter(repo, mapper, scope, SpanWriter.Config(capacity = 10_000, batchSize = 1))
 
     private val httpPort = freePort()
@@ -95,6 +98,7 @@ class OtlpHttpReceiverIT {
     @AfterAll
     fun tearDown() {
         runBlocking {
+            writer.drainAndClose()
             ktor.stop(gracePeriodMillis = 500, timeoutMillis = 2_000)
             scope.coroutineContext[kotlinx.coroutines.Job]?.cancel()
             client.close()
@@ -123,7 +127,6 @@ class OtlpHttpReceiverIT {
                     .end()
 
                 sdk.forceFlush().join(10, TimeUnit.SECONDS).isSuccess shouldBe true
-                writer.drainAndClose()
                 waitForSpans(traceId, expected = 1)
 
                 val fetched = repo.getTraceById(traceId).getOrThrow()
@@ -165,7 +168,6 @@ class OtlpHttpReceiverIT {
                     .end()
 
                 sdk.forceFlush().join(10, TimeUnit.SECONDS).isSuccess shouldBe true
-                writer.drainAndClose()
                 waitForSpans(traceId, expected = 1)
 
                 val fetched = repo.getTraceById(traceId).getOrThrow()
@@ -215,6 +217,11 @@ class OtlpHttpReceiverIT {
          * An [SdkTracerProvider] whose [IdGenerator] mints the supplied KNOWN hex ids, so the
          * exported span has a deterministic trace/span id we can assert with `getTraceById`. The OTel
          * SDK encodes these as lowercase no-prefix hex — identical to the decoder + storage format.
+         *
+         * The resource is [io.opentelemetry.sdk.resources.Resource.empty] — the SDK's DEFAULT
+         * resource carries `service.name=unknown_service:java`, which the D-10 extractor fallback
+         * legitimately maps into `agentName`; the null/default-sentinel assertions need a genuinely
+         * resource-attribute-free span.
          */
         fun tracerProvider(
             exporter: io.opentelemetry.sdk.trace.export.SpanExporter,
@@ -223,7 +230,10 @@ class OtlpHttpReceiverIT {
         ): SdkTracerProvider =
             SdkTracerProvider
                 .builder()
-                .setIdGenerator(fixedIdGenerator(traceIdHex, spanIdHex))
+                .setResource(
+                    io.opentelemetry.sdk.resources.Resource
+                        .empty(),
+                ).setIdGenerator(fixedIdGenerator(traceIdHex, spanIdHex))
                 .addSpanProcessor(SimpleSpanProcessor.create(exporter))
                 .build()
 

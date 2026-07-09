@@ -58,10 +58,17 @@ class SpanWriter(
     scope: CoroutineScope,
     private val config: Config = Config(),
 ) {
-    /** Immutable intake record: an [AgentSpan] plus the [SpanContext] envelope identity. */
+    /**
+     * Immutable intake record: an [AgentSpan] plus the [SpanContext] envelope identity, and the
+     * OTLP envelope's display names — [spanName] (`Span.name`) and [serviceName] (resource
+     * `service.name`) — which [AgentSpan] (attributes-only) does not carry. Defaults keep
+     * non-OTLP callers/tests source-compatible.
+     */
     data class SpanEnvelope(
         val span: AgentSpan,
         val context: SpanContext,
+        val spanName: String = "",
+        val serviceName: String = "",
     )
 
     /**
@@ -125,8 +132,10 @@ class SpanWriter(
     suspend fun send(
         span: AgentSpan,
         context: SpanContext,
+        spanName: String = "",
+        serviceName: String = "",
     ) {
-        val envelope = SpanEnvelope(span, context)
+        val envelope = SpanEnvelope(span, context, spanName, serviceName)
         // Fast path: if the buffer has room, enqueue without suspending and stay un-saturated.
         val offered = intake.trySend(envelope).isSuccess
         if (offered) return
@@ -206,7 +215,7 @@ class SpanWriter(
         val spanRows = ArrayList<SpanRow>(batch.size)
         val payloadRows = ArrayList<PayloadRow>(batch.size)
         for (envelope in batch) {
-            val (spanRow, payloadRow) = mapper.map(envelope.span, envelope.context)
+            val (spanRow, payloadRow) = mapper.map(envelope.span, envelope.context, envelope.spanName, envelope.serviceName)
             spanRows.add(spanRow)
             payloadRows.add(payloadRow)
         }

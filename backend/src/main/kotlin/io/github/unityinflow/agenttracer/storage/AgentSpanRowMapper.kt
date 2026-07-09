@@ -35,6 +35,8 @@ class AgentSpanRowMapper {
     fun map(
         span: AgentSpan,
         context: SpanContext,
+        spanName: String = "",
+        serviceName: String = "",
     ): Pair<SpanRow, PayloadRow> {
         val input = cap(span.inputPayload)
         val output = cap(span.outputPayload)
@@ -60,7 +62,9 @@ class AgentSpanRowMapper {
             }
 
         val spanRow =
-            SpanRow.from(span, context).apply {
+            // The OTLP envelope names flow through here — omitting them silently stores empty
+            // SpanName/ServiceName columns for every ingested span (bug found 2026-07-09).
+            SpanRow.from(span, context, spanName = spanName, serviceName = serviceName).apply {
                 payloadTruncated = truncated
                 payloadOriginalSizeBytes = originalSizeBytes
             }

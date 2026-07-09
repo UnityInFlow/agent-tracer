@@ -118,7 +118,7 @@ class OtlpGrpcService(
                 try {
                     val result = decoder.decode(request)
                     // INGEST-03: accepted spans flow through the batching pipeline only — no repo call.
-                    result.accepted.forEach { writer.send(it.span, it.context) }
+                    result.accepted.forEach { writer.send(it.span, it.context, it.spanName, it.serviceName) }
                     OtlpResponses.buildResponse(result)
                 } catch (e: CancellationException) {
                     // WR-02: cooperative cancellation (scope cancelled mid-send) is NOT an internal

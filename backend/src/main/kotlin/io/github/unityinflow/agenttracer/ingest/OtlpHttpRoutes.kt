@@ -89,7 +89,7 @@ fun Route.otlpTraces(
 
         val result = decoder.decode(request)
         // INGEST-03: accepted spans flow through the batching pipeline only — no repository call here.
-        result.accepted.forEach { writer.send(it.span, it.context) }
+        result.accepted.forEach { writer.send(it.span, it.context, it.spanName, it.serviceName) }
 
         val response = OtlpResponses.buildResponse(result)
         call.respondBytes(OTLP_PROTOBUF, HttpStatusCode.OK) { response.toByteArray() }
