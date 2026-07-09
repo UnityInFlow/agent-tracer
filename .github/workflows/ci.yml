@@ -40,5 +40,9 @@ jobs:
       - name: Build + test (incl. ClickHouse Testcontainers ITs)
         run: ./gradlew build
 
+      # The action inspects the PR diff and comments on the PR — it hard-fails on
+      # non-PR events ("This action only works on pull_request events"), so gate it.
+      # The ecosystem requirement is lint-on-every-PR (agent-tracer CLAUDE.md, June 2026).
       - name: Spec compliance (dogfood Tool 04)
+        if: github.event_name == 'pull_request'
         uses: UnityInFlow/spec-ci-plugin@v1
