@@ -1,0 +1,102 @@
+# Release automation for agent-tracer (the OPS-01 template instantiation for
+# this milestone's repos).
+#
+# Secret-bearing / self-hosted by design: fork PRs cannot push v*.*.* tags, so
+# the org self-hosted runners are never exposed to untrusted fork code (D-02).
+# All release work MUST complete while the repo is still PRIVATE — under the
+# org runner group's `allows_public_repositories: false` policy, no self-hosted
+# job ever runs on a public repo (RESEARCH Pitfall 2).
+
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write    # for creating the GH Release
+  packages: write    # for ghcr.io push
+
+# Single guaranteed runner: serialize release runs and never cancel one
+# mid-push (v0.1.0 single-runner precedent).
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    # OPS-01 D-01: orangepi is the guaranteed release path. The Hetzner fleet
+    # (arc-runner-unityinflow) is a non-guaranteed optional accelerator — never
+    # release-critical (D-03; currently not registered on the org at all).
+    runs-on: [orangepi]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      # docker-container driver: multi-platform manifest capable (D-06).
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push tracer image (multi-arch, QEMU-free)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/tracer.Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/unityinflow/agent-tracer:${{ steps.version.outputs.version }}
+            ghcr.io/unityinflow/agent-tracer:latest
+
+      - name: Build and push demo-emitter image (multi-arch)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/emitter.Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/unityinflow/agent-tracer-demo-emitter:${{ steps.version.outputs.version }}
+            ghcr.io/unityinflow/agent-tracer-demo-emitter:latest
+
+      # Host-arch-aware verification (v0.1.0 precedent): NEVER docker-run the
+      # amd64 variant on this ARM64 host — inspect the pushed manifests instead.
+      - name: Verify multi-arch manifests
+        run: |
+          set -euo pipefail
+          for image in ghcr.io/unityinflow/agent-tracer ghcr.io/unityinflow/agent-tracer-demo-emitter; do
+            docker buildx imagetools inspect "${image}:${{ steps.version.outputs.version }}" | tee manifest.txt
+            grep -q 'linux/amd64' manifest.txt
+            grep -q 'linux/arm64' manifest.txt
+          done
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: agent-tracer ${{ github.ref_name }}
+          generate_release_notes: true
+          body: |
+            agent-tracer **${{ github.ref_name }}** released.
+
+            ## Quickstart (pulls released GHCR images only — D-07)
+
+            ```bash
+            git clone https://github.com/UnityInFlow/agent-tracer
+            cd agent-tracer
+            docker compose -f docker/compose.yaml up
+            ```
+
+            Then open http://localhost:8080 — the demo-emitter seeds traces on cold start.
+
+            See the auto-generated notes below for changes since the previous release.

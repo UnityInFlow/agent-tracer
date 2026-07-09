@@ -1,0 +1,25 @@
+# Orangepi Docker/buildx preflight probe (RESEARCH Pitfall 5).
+#
+# Purpose: proves Docker Engine + buildx exist on the orangepi host BEFORE the
+# release workflow ever runs. No prior orangepi workflow used Docker — every
+# v0.1.0 release there was cargo-zigbuild or pure Gradle. Dispatch this
+# manually and confirm success before pushing any release tag.
+#
+# workflow_dispatch only: forks cannot fire it, so the self-hosted runner is
+# never exposed to untrusted code (D-02).
+
+name: Orangepi Docker Preflight
+
+on:
+  workflow_dispatch:
+
+jobs:
+  docker-preflight:
+    # OPS-01 D-01: orangepi is the guaranteed release path.
+    runs-on: [orangepi]
+    steps:
+      - name: Verify Docker Engine + buildx
+        run: |
+          set -euo pipefail
+          docker version
+          docker buildx version

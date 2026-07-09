@@ -93,15 +93,18 @@ Researched and version-verified — see the Technology Stack section below and `
 
 ## CI / Self-Hosted Runners
 
-Use UnityInFlow org-level self-hosted runners. Never use `ubuntu-latest`.
+This repo follows the D-02 split CI pattern (root CLAUDE.md, July 2026 / OPS-01, OPS-02):
+
+- **Fork/public CI (`ci.yml`)** runs GitHub-hosted on `ubuntu-latest`, secretless, with `permissions: contents: read` — the ONE sanctioned public-repo carve-out. Fork PRs must never reach org self-hosted runners (the org runner group has `allows_public_repositories: false`).
+- **Release work (`release.yml`, `preflight.yml`)** runs self-hosted on the guaranteed path, triggered only by events forks cannot fire (tag push / `workflow_dispatch`) — and must complete while the repo is private:
 
 ```yaml
-runs-on: [arc-runner-unityinflow]
+runs-on: [orangepi]   # OPS-01 D-01: the guaranteed release path
 ```
 
-CI must include the `spec-ci-plugin` GitHub Action (Tool 04) to lint this CLAUDE.md with spec-linter on every PR (decision: June 2026).
+The Hetzner X64 fleet (`arc-runner-unityinflow`) is an optional, non-guaranteed accelerator only — never release-critical, and currently not registered on the org at all (verified 2026-07-03).
 
-Available runners: `hetzner-runner-1/2/3` (X64), `orangepi-runner` (ARM64).
+CI must include the `spec-ci-plugin` GitHub Action (Tool 04) to lint this CLAUDE.md with spec-linter on every PR (decision: June 2026).
 
 ---
 
@@ -132,7 +135,7 @@ A purpose-built agent call graph visualizer — Tool 09 of the UnityInFlow ecosy
 - **Kotlin style**: no `var`, no `!!` without a safety comment, sealed classes for domain modelling, immutable data classes
 - **Quality**: >80% test coverage on core logic before release
 - **Security**: no secrets committed — credentials via environment variables only
-- **CI**: UnityInFlow self-hosted runners (`runs-on: [arc-runner-unityinflow]`), never `ubuntu-latest`; runner group requires private repo or enabled public-repo access
+- **CI**: D-02 split (July 2026) — fork/public CI GitHub-hosted secretless on `ubuntu-latest` (the sanctioned carve-out); release work self-hosted on `runs-on: [orangepi]` (OPS-01), triggered only by tag push / `workflow_dispatch` while the repo is private; Hetzner `arc-runner-unityinflow` is an optional accelerator only, never release-critical
 
 <!-- GSD:project-end -->
 

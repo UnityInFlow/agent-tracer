@@ -1,0 +1,44 @@
+# Public/fork-PR CI for agent-tracer.
+#
+# DELIBERATE D-02 EXCEPTION: this is the ONE sanctioned use of GitHub-hosted
+# `ubuntu-latest` in the UnityInFlow ecosystem. Because this repo is/will be
+# public and this job is secretless, fork PRs must NEVER reach the org
+# self-hosted runners. Running on GitHub-hosted runners keeps the org runner
+# group's `allows_public_repositories: false` policy intact while still
+# validating fork PRs. This is NOT a violation of the "never ubuntu-latest"
+# rule — it is the explicit public-repo carve-out (root CLAUDE.md, July 2026).
+# All secret-bearing work (GHCR push + GH Release) lives in release.yml on
+# self-hosted runners, triggered only by tag pushes forks cannot fire.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    # D-02 exception (see top-of-file comment): GitHub-hosted, secretless.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # GitHub-hosted runners ship native Docker, so the ClickHouse
+      # Testcontainers integration tests run for real here — the deferred
+      # Phase-2/3 ITs are finally observed in CI (RESEARCH Pattern 1 bonus).
+      - name: Build + test (incl. ClickHouse Testcontainers ITs)
+        run: ./gradlew build
+
+      - name: Spec compliance (dogfood Tool 04)
+        uses: UnityInFlow/spec-ci-plugin@v1
