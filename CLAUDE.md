@@ -91,18 +91,21 @@ Researched and version-verified — see the Technology Stack section below and `
 
 ---
 
-## CI / Self-Hosted Runners
+## CI / Runners
 
-This repo follows the D-02 split CI pattern (root CLAUDE.md, July 2026 / OPS-01, OPS-02):
+This repo is public. The org runner group does not allow public repositories
+(`allows_public_repositories: false`), so all workflows run on GitHub-hosted runners (free for public repos):
 
-- **Fork/public CI (`ci.yml`)** runs GitHub-hosted on `ubuntu-latest`, secretless, with `permissions: contents: read` — the ONE sanctioned public-repo carve-out. Fork PRs must never reach org self-hosted runners (the org runner group has `allows_public_repositories: false`).
-- **Release work (`release.yml`, `preflight.yml`)** runs self-hosted on the guaranteed path, triggered only by events forks cannot fire (tag push / `workflow_dispatch`) — and must complete while the repo is private:
+- **Fork/public CI (`ci.yml`)**: secretless, `permissions: contents: read`.
+- **Release work (`release.yml`)**: GHCR push + GitHub Release, triggered only by tag pushes forks cannot fire.
 
 ```yaml
-runs-on: [orangepi]   # OPS-01 D-01: the guaranteed release path
+runs-on: ubuntu-24.04
 ```
 
-The Hetzner X64 fleet (`arc-runner-unityinflow`) is an optional, non-guaranteed accelerator only — never release-critical, and currently not registered on the org at all (verified 2026-07-03).
+Use the fixed image label, not `ubuntu-latest`. The org requires every `uses:` to be pinned to a full
+commit SHA with a `# vX.Y.Z` comment, and only allow-listed actions run. The former self-hosted labels
+`arc-runner-unityinflow` and `orangepi` have no runner any more; do not use them.
 
 CI must include the `spec-ci-plugin` GitHub Action (Tool 04) to lint this CLAUDE.md with spec-linter on every PR (decision: June 2026).
 
@@ -135,7 +138,7 @@ A purpose-built agent call graph visualizer — Tool 09 of the UnityInFlow ecosy
 - **Kotlin style**: no `var`, no `!!` without a safety comment, sealed classes for domain modelling, immutable data classes
 - **Quality**: >80% test coverage on core logic before release
 - **Security**: no secrets committed — credentials via environment variables only
-- **CI**: D-02 split (July 2026) — fork/public CI GitHub-hosted secretless on `ubuntu-latest` (the sanctioned carve-out); release work self-hosted on `runs-on: [orangepi]` (OPS-01), triggered only by tag push / `workflow_dispatch` while the repo is private; Hetzner `arc-runner-unityinflow` is an optional accelerator only, never release-critical
+- **CI**: GitHub-hosted `ubuntu-24.04` for CI and release (public repo); release only on tag push; actions SHA-pinned
 
 <!-- GSD:project-end -->
 
@@ -191,7 +194,7 @@ A purpose-built agent call graph visualizer — Tool 09 of the UnityInFlow ecosy
 | Gradle (Kotlin DSL) | 9.5.1 | Current stable; use version catalog (`libs.versions.toml`). |
 | ktlint (jlleitschuh Gradle plugin) | Format before every commit | Ecosystem rule. |
 | Docker Compose | tracer + ClickHouse all-in-one | App image: `eclipse-temurin:21-jre`. Expose 4317 (gRPC), 4318 (HTTP), 8080 (UI/API). |
-| spec-ci-plugin (Tool 04) | Lint CLAUDE.md in CI | Ecosystem requirement; `runs-on: [arc-runner-unityinflow]`. |
+| spec-ci-plugin (Tool 04) | Lint CLAUDE.md in CI | Ecosystem requirement; runs in `ci.yml` on `ubuntu-24.04`. |
 
 ## Key Architecture-Affecting Decisions
 

@@ -6,7 +6,7 @@
 # the demo traces ingested end-to-end AND are served back over the query API.
 # Tears the stack down (`down -v`) on any exit via a trap.
 #
-# REQUIRES a real Linux Docker host (local Docker Desktop or arc-runner-unityinflow).
+# REQUIRES a real Linux Docker host (local Docker Desktop or a GitHub-hosted ubuntu-24.04 runner).
 # The sandbox Testcontainers/Ryuk path is blocked (carry-forward debt from Phases 2-3),
 # but a plain `docker compose up` does NOT go through Ryuk, so this script is the
 # canonical place the deferred Phase-2/3 ClickHouse ITs finally observe a green
